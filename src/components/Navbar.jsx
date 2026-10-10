@@ -10,9 +10,11 @@ import {
   LogIn,
   LogOut,
   User,
-  Smartphone
+  Smartphone,
+  Lock
 } from 'lucide-react';
 import { useCourse } from '../context/CourseContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar({ 
   activeView, 
@@ -24,6 +26,7 @@ export default function Navbar({
   onOpenPwLogin
 }) {
   const { enrolledBatches, activeProvider, setActiveProvider, pwUser, logoutPwUser } = useCourse();
+  const { logout, authEmail } = useAuth();
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#0d0d13]/95 backdrop-blur-md border-b border-white/[0.08]">
@@ -161,6 +164,16 @@ export default function Navbar({
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
             <span>Ad-Free</span>
           </div>
+
+          {/* Master Lock Screen Button */}
+          <button
+            onClick={logout}
+            title={`Authenticated as ${authEmail} • Click to Lock App`}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-neutral-900/90 border border-neutral-700/60 hover:border-amber-400/50 text-neutral-300 hover:text-amber-400 text-xs font-semibold transition-all active:scale-95"
+          >
+            <Lock className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline text-[11px]">Lock App</span>
+          </button>
         </div>
 
       </div>

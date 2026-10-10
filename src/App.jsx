@@ -11,6 +11,8 @@ import PwAuthModal from './components/PwAuthModal';
 import { fetchBatches } from './services/api';
 import { fetchPwBatches, fetchPwBatchDetails } from './services/pwApi';
 import { CourseProvider, useCourse } from './context/CourseContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import AuthGate from './components/AuthGate';
 import { ShieldCheck, Sparkles } from 'lucide-react';
 
 function AppContent() {
@@ -275,10 +277,24 @@ function AppContent() {
   );
 }
 
-export default function App() {
+function MainApp() {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <AuthGate />;
+  }
+
   return (
     <CourseProvider>
       <AppContent />
     </CourseProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainApp />
+    </AuthProvider>
   );
 }
