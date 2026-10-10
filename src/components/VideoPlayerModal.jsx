@@ -211,10 +211,18 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
     setResolving(true);
     setHasPlaybackError(false);
     resolveMediaContent(effectiveCourseId, item.entity_id).then((res) => {
-      if (res.success && res.url) {
+      if (res && res.success && res.url) {
         setCurrentSrc(res.url);
         setStreamType(res.type || (res.url.includes('.m3u8') ? 'hls' : 'mp4'));
+        setResolving(false);
+      } else {
+        setHasPlaybackError(true);
+        setErrorMessage(res?.message || 'Stream source currently unavailable');
+        setResolving(false);
       }
+    }).catch((err) => {
+      setHasPlaybackError(true);
+      setErrorMessage(err.message || 'Unable to reload video stream');
       setResolving(false);
     });
   };

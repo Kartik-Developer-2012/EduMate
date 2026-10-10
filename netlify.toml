@@ -1,6 +1,25 @@
 [build]
   publish = "dist"
   command = "npm run build"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/resolve-media"
+  to = "/.netlify/functions/resolve-media"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/stream/video"
+  to = "/.netlify/functions/stream-video"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/stream/pdf"
+  to = "/.netlify/functions/stream-pdf"
+  status = 200
+  force = true
 
 [[redirects]]
   from = "/api/pw/*"

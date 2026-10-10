@@ -228,10 +228,144 @@ export function extractMediaInfo(item) {
   };
 }
 
+// In-browser client fallback key caching and resolution
+const CLIENT_STORAGE_KEY = 'edumate_sb_key';
+let memoryKey = null;
+let memoryKeyExpiresAt = 0;
+let memoryDevId = null;
+
+function getStoredKey() {
+  if (memoryKey && Date.now() < memoryKeyExpiresAt) {
+    return { keyName: memoryKey, devId: memoryDevId };
+  }
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(CLIENT_STORAGE_KEY) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.keyName && parsed.expiresAt > Date.now() + 60000) {
+        memoryKey = parsed.keyName;
+        memoryKeyExpiresAt = parsed.expiresAt;
+        memoryDevId = parsed.devId;
+        return { keyName: memoryKey, devId: memoryDevId };
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+
+function saveStoredKey(keyName, devId, expiresAt) {
+  memoryKey = keyName;
+  memoryKeyExpiresAt = expiresAt - 60000;
+  memoryDevId = devId;
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify({ keyName, devId, expiresAt }));
+    }
+  } catch (e) {}
+}
+
+async function getOrGenerateClientKey() {
+  const existing = getStoredKey();
+  if (existing) {
+    return existing;
+  }
+
+  const [{ initializeApp, getApps, getApp }, { getFirestore, doc, setDoc }, { getAuth, signInAnonymously }] = await Promise.all([
+    import('firebase/app'),
+    import('firebase/firestore'),
+    import('firebase/auth')
+  ]);
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAzxBCRdwK4NIyGwkzBrV9ev_53MJIfsOM",
+    authDomain: "smexgod.firebaseapp.com",
+    projectId: "smexgod",
+    storageBucket: "smexgod.firebasestorage.app",
+    messagingSenderId: "34615632505",
+    appId: "1:34615632505:web:6e7b5c39e847854ded6aa8"
+  };
+
+  const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig, "clientMediaResolverApp");
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  if (!auth.currentUser) {
+    await signInAnonymously(auth);
+  }
+
+  const keyName = 'SB-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+  const devId = 'dev_' + Math.random().toString(36).substr(2, 9);
+  const expiresAt = Date.now() + (48 * 60 * 60 * 1000);
+
+  await setDoc(doc(db, 'valid_keys', keyName), {
+    createdAt: Date.now(),
+    expiresAt: expiresAt,
+    status: 'active',
+    createdBy: 'user_generate',
+    maxDevices: 1,
+    registeredDevices: []
+  });
+
+  saveStoredKey(keyName, devId, expiresAt);
+  return { keyName, devId };
+}
+
+async function directResolveMedia(courseId, contentId) {
+  const { keyName, devId } = await getOrGenerateClientKey();
+
+  let foyJson = null;
+  const urlsToTry = [
+    `/api/studybee/api/foy?content_id=${contentId}&course_id=${courseId}&key=${keyName}&device_id=${devId}`,
+    `${STUDYBEE_ORIGIN}/api/foy?content_id=${contentId}&course_id=${courseId}&key=${keyName}&device_id=${devId}`
+  ];
+
+  for (const url of urlsToTry) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.decryptedData || data.data || data.drm_details || data.success !== false)) {
+          foyJson = data;
+          break;
+        }
+      }
+    } catch (e) {
+      console.warn(`Fetch to ${url} failed:`, e);
+    }
+  }
+
+  if (!foyJson) {
+    return { success: false, message: 'Could not contact media server' };
+  }
+
+  const mediaData = foyJson.decryptedData || foyJson.data || {};
+  const finalUrl = foyJson.drm_details?.data?.link?.file_url || mediaData.file_url || '';
+  const lowerUrl = finalUrl.toLowerCase();
+  const isPdf = mediaData.file_type === 1 || lowerUrl.includes('.pdf');
+  const isHls = lowerUrl.includes('.m3u8');
+  const isYouTube = mediaData.video_type === 1 || lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be');
+
+  if (finalUrl) {
+    return {
+      success: true,
+      url: finalUrl,
+      streamUrl: isPdf ? `/api/stream/pdf?url=${encodeURIComponent(finalUrl)}` : finalUrl,
+      type: isPdf ? 'pdf' : (isHls ? 'hls' : (isYouTube ? 'youtube' : 'mp4')),
+      mediaData,
+      drmToken: foyJson.drm_details?.data?.link?.token || null
+    };
+  }
+
+  return {
+    success: false,
+    message: foyJson.reason || 'Media stream not found'
+  };
+}
+
 // 6. Asynchronously resolve media (HLS .m3u8, direct PDF, or DRM) without ads or keys
 export async function resolveMediaContent(courseId, contentId) {
   if (!courseId || !contentId) return { success: false, message: 'Missing courseId or contentId' };
 
+  // 1. Try backend/serverless resolver (/api/resolve-media)
   try {
     const res = await fetch('/api/resolve-media', {
       method: 'POST',
@@ -239,12 +373,27 @@ export async function resolveMediaContent(courseId, contentId) {
       body: JSON.stringify({ courseId, contentId })
     });
     if (res.ok) {
-      return await res.json();
+      const data = await res.json();
+      if (data && data.success) {
+        return data;
+      }
     }
   } catch (err) {
-    console.error('Resolve media API failed:', err);
+    console.warn('Backend resolve-media fetch failed:', err);
   }
-  return { success: false, message: 'Failed to connect to local media resolver' };
+
+  // 2. Resilient client-side fallback (solves 404 on Netlify / static hosts)
+  try {
+    const fallbackResult = await directResolveMedia(courseId, contentId);
+    if (fallbackResult && fallbackResult.success) {
+      return fallbackResult;
+    }
+    return fallbackResult;
+  } catch (directErr) {
+    console.error('Direct client-side media resolution failed:', directErr);
+  }
+
+  return { success: false, message: 'Failed to connect to media resolver' };
 }
 
 // 7. Asynchronously resolve direct PDF stream without external redirects
