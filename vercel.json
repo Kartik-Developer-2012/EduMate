@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/pw/(.*)",
+      "destination": "https://physicswallah.studybeepro.site/api/$1"
+    },
+    {
+      "source": "/api/nts/(.*)",
+      "destination": "https://nts.khatikgaurav38.workers.dev/$1"
+    },
+    {
+      "source": "/api/studybee/(.*)",
+      "destination": "https://nt.studybeepro.site/$1"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

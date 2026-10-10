@@ -1,0 +1,26 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+[[redirects]]
+  from = "/api/pw/*"
+  to = "https://physicswallah.studybeepro.site/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/nts/*"
+  to = "https://nts.khatikgaurav38.workers.dev/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/studybee/*"
+  to = "https://nt.studybeepro.site/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
