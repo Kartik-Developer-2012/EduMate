@@ -448,33 +448,310 @@ export async function resolvePdfDocument(courseId, item) {
   };
 }
 
-// 6. Helper to detect and format teacher name
+// 6. Comprehensive Teacher & Faculty Resolver for Next Toppers / StudyBee content
 export function getTeacherForContent(item, folderHistory = [], batchTitle = '') {
-  const itemTitle = (item?.title || '').toLowerCase();
-  const folderNames = folderHistory.map((f) => (f.title || '').toLowerCase()).join(' ');
-  const fullContext = `${itemTitle} ${folderNames} ${batchTitle.toLowerCase()}`;
+  // If item already has a pre-resolved teacher name, honor it immediately
+  if (item?.teacherName) return item.teacherName;
+  if (item?.faculty) return item.faculty;
+  if (item?.facultyName) return item.facultyName;
+  if (item?.data?.faculty_name) return item.data.faculty_name;
+  if (item?.data?.teacher_name) return item.data.teacher_name;
+  if (item?.data?.instructor) return item.data.instructor;
+  if (item?.data?.author) return item.data.author;
+  if (item?.byName) return item.byName;
 
-  // Explicit teachers
-  if (fullContext.includes('prashant') || fullContext.includes('science') || fullContext.includes('physics') || fullContext.includes('chemistry')) {
+  const itemTitle = (item?.title || item?.name || item?.data?.title || '').toLowerCase();
+  
+  // Extract immediate folder (e.g. Chapter title or Sub-subject)
+  const currentFolder = folderHistory && folderHistory.length > 0 
+    ? (folderHistory[folderHistory.length - 1]?.title || '').toLowerCase() 
+    : '';
+
+  // Extract all ancestor folders
+  const parentFolders = Array.isArray(folderHistory)
+    ? folderHistory.map((f) => (f?.title || '').toLowerCase()).join(' ')
+    : '';
+
+  const batchStr = (batchTitle || item?.batchTitle || item?.courseTitle || '').toLowerCase();
+
+  // Immediate context prioritizes the lecture title and the immediate chapter folder
+  const immediateContext = `${itemTitle} ${currentFolder}`;
+  
+  // Full context incorporates the entire directory tree and batch name
+  const fullContext = `${immediateContext} ${parentFolders} ${batchStr}`;
+
+  // ----------------------------------------------------
+  // 1. HIGHEST PRIORITY: Explicit Teacher Names in Text
+  // ----------------------------------------------------
+  if (fullContext.includes('prashant kirad') || fullContext.includes('prashant sir') || fullContext.includes('pk sir') || fullContext.includes('prashant bhaiya')) {
     return 'Prashant Kirad Sir';
   }
-  if (fullContext.includes('digraj') || fullContext.includes('social science') || fullContext.includes('sst') || fullContext.includes('history') || fullContext.includes('civics') || fullContext.includes('geography')) {
+  if (fullContext.includes('digraj') || fullContext.includes('dsr sir') || fullContext.includes('digraj sir')) {
     return 'Digraj Singh Rajput Sir';
   }
-  if (fullContext.includes('maths') || fullContext.includes('mathematics') || fullContext.includes('algebra') || fullContext.includes('geometry') || fullContext.includes('kunal')) {
+  if (fullContext.includes('shobhit nirwan') || fullContext.includes('shobhit bhaiya') || fullContext.includes('shobhit sir')) {
+    return 'Shobhit Nirwan Bhaiya';
+  }
+  if (fullContext.includes('kunal sir') || fullContext.includes('kunal bhaiya')) {
     return 'Kunal Sir (Maths Faculty)';
   }
-  if (fullContext.includes('english')) {
-    return 'English Faculty';
+  if (fullContext.includes('apeksha') || fullContext.includes('apeksha ma\'am') || fullContext.includes('apeksha mam')) {
+    return 'Apeksha Ma\'am (Biology)';
   }
-  if (fullContext.includes('hindi') || fullContext.includes('हिंदी')) {
-    return 'Hindi Faculty';
+  if (fullContext.includes('tapur') || fullContext.includes('tapur ma\'am') || fullContext.includes('tapur mam')) {
+    return 'Tapur Ma\'am (Chemistry)';
   }
-  if (fullContext.includes('artificial intelligence') || fullContext.includes('ai') || fullContext.includes('information technology') || fullContext.includes('it')) {
+  if (fullContext.includes('ravi sir')) {
+    return 'Ravi Sir (Physics)';
+  }
+  if (fullContext.includes('sourabh sir')) {
+    return 'Sourabh Sir (Chemistry)';
+  }
+  if (fullContext.includes('kuldeep sir')) {
+    return 'Kuldeep Sir (Maths)';
+  }
+  if (fullContext.includes('samridhi') || fullContext.includes('samriddhi')) {
+    return 'Samridhi Ma\'am (Biology)';
+  }
+  if (fullContext.includes('taniya')) {
+    return 'Taniya Ma\'am (English)';
+  }
+  if (fullContext.includes('mansi')) {
+    return 'Mansi Ma\'am (English)';
+  }
+  if (fullContext.includes('aarushi')) {
+    return 'Aarushi Ma\'am (Biology)';
+  }
+  if (fullContext.includes('ashu sir') || fullContext.includes('ashu ghai')) {
+    return 'Ashu Sir (Science)';
+  }
+
+  // ----------------------------------------------------
+  // 2. ROOT SUBJECT DIRECTORY CHECK (Folder-level absolute truth)
+  // When browsing inside a subject tree (like Maths or SST), all lectures inside are for that subject!
+  // ----------------------------------------------------
+  const folderNamesList = Array.isArray(folderHistory)
+    ? folderHistory.map((f) => (f?.title || '').toLowerCase())
+    : [];
+
+  // A. MATHEMATICS FOLDER
+  const isInsideMaths = folderNamesList.some((f) => 
+    /\b(maths?|mathematics|algebra|geometry)\b/i.test(f)
+  );
+  if (isInsideMaths) {
+    if (fullContext.includes('shobhit')) return 'Shobhit Nirwan Bhaiya (Mathematics)';
+    return 'Kunal Sir (Maths Faculty)';
+  }
+
+  // B. SOCIAL SCIENCE / SST FOLDER
+  const isInsideSst = folderNamesList.some((f) => 
+    /\b(social science|sst|history|geography|civics|economics|political science|democratic politics)\b/i.test(f)
+  );
+  if (isInsideSst) {
+    return 'Digraj Singh Rajput Sir (Social Science Legend)';
+  }
+
+  // C. ENGLISH FOLDER
+  const isInsideEnglish = folderNamesList.some((f) => /\benglish\b/i.test(f));
+  if (isInsideEnglish) {
+    return 'Taniya Ma\'am (English Faculty)';
+  }
+
+  // D. HINDI FOLDER
+  const isInsideHindi = folderNamesList.some((f) => /\b(hindi|हिंदी)\b/i.test(f));
+  if (isInsideHindi) {
+    return 'Hindi Star Faculty';
+  }
+
+  // E. IT & AI FOLDER
+  const isInsideItAi = folderNamesList.some((f) => 
+    /\b(information technology|artificial intelligence|code 402|code 417)\b/i.test(f)
+  );
+  if (isInsideItAi) {
     return 'IT & AI Faculty';
   }
-  if (fullContext.includes('biology')) {
-    return 'Biology Specialist';
+
+  // F. DIRECT SUB-DISCIPLINE FOLDERS (e.g. Inside Science or Class 11/12)
+  const isInsideBioFolder = folderNamesList.some((f) => /\b(biology|botany|zoology)\b/i.test(f));
+  if (isInsideBioFolder) {
+    return 'Apeksha Ma\'am (Biology Specialist)';
+  }
+
+  const isInsideChemFolder = folderNamesList.some((f) => /\b(chemistry|organic chemistry|inorganic chemistry)\b/i.test(f));
+  if (isInsideChemFolder) {
+    return 'Tapur Ma\'am (Chemistry Specialist)';
+  }
+
+  const isInsidePhysicsFolder = folderNamesList.some((f) => /\b(physics)\b/i.test(f));
+  if (isInsidePhysicsFolder) {
+    const isSeniorClass = batchStr.includes('11') || batchStr.includes('12');
+    return isSeniorClass ? 'Ravi Sir (Physics Faculty)' : 'Prashant Kirad Sir (Physics Specialist)';
+  }
+
+  // ----------------------------------------------------
+  // 3. CHAPTER & TOPIC MATCHING (Checks immediate chapter title and lecture title)
+  // ----------------------------------------------------
+
+  // A. MATHEMATICS CHAPTERS & TOPICS (Checked first to prevent accidental physics matches)
+  const mathsKeywords = [
+    'math', 'maths', 'mathematics', 'algebra', 'geometry', 'mensuration', 'trigonometry', 'calculus', 'arithmetic',
+    'real numbers', 'polynomial', 'polynomials', 'linear equation', 'linear equations', 'quadratic equation', 'quadratic equations',
+    'arithmetic progression', 'triangles', 'coordinate geometry', 'circles', 'constructions',
+    'perimeter and area', 'measuring space', 'surface area', 'surface areas', 'areas related to circles',
+    'statistics', 'probability', 'number system', 'number systems', 'lines and angles',
+    'quadrilateral', 'quadrilaterals', 'heron', 'heron\'s formula', 'differentiation', 'integration',
+    'sets, relations', 'matrices', 'determinants'
+  ];
+  if (mathsKeywords.some((kw) => immediateContext.includes(kw))) {
+    if (fullContext.includes('shobhit')) return 'Shobhit Nirwan Bhaiya (Mathematics)';
+    return 'Kunal Sir (Maths Faculty)';
+  }
+
+  // B. BIOLOGY CHAPTERS & TOPICS
+  const biologyKeywords = [
+    'biology', 'botany', 'zoology',
+    // Class 10 Biology Chapters
+    'life process', 'life processes', 'nutrition in organisms', 'respiration in organisms',
+    'control and coordination', 'control & coordination', 'nervous system', 'reflex arc', 'hormones',
+    'how do organisms reproduce', 'reproduction', 'reproduce', 'asexual reproduction', 'sexual reproduction',
+    'heredity and evolution', 'heredity', 'genetics', 'mendel',
+    'our environment', 'ecosystem', 'trophic level', 'food chain', 'ozone layer',
+    'management of natural resources', 'natural resources',
+    // Class 9 Biology Chapters
+    'fundamental unit of life', 'cell', 'cells', 'plasma membrane', 'mitochondria', 'cell organelle',
+    'tissue', 'tissues', 'xylem', 'phloem', 'parenchyma', 'epithelial',
+    'diversity in living', 'living organism', 'monera', 'protista', 'animalia', 'plantae',
+    'why do we fall ill', 'fall ill', 'health and disease', 'infectious disease',
+    'improvement in food', 'food resources', 'crop production', 'animal husbandry',
+    // Class 11 & 12 Biology Chapters
+    'living world', 'biological classification', 'plant kingdom', 'animal kingdom',
+    'morphology of flowering', 'anatomy of flowering', 'cell cycle', 'biomolecules',
+    'respiration in plants', 'plant growth', 'breathing and exchange', 'body fluids', 'excretory products',
+    'locomotion and movement', 'neural control', 'chemical coordination', 'reproductive health',
+    'human reproduction', 'molecular basis of inheritance', 'principles of inheritance',
+    'human health and disease', 'biotechnology', 'microbes in human', 'biodiversity'
+  ];
+  if (biologyKeywords.some((kw) => immediateContext.includes(kw))) {
+    return 'Apeksha Ma\'am (Biology Specialist)';
+  }
+
+  // C. CHEMISTRY CHAPTERS & TOPICS
+  const chemistryKeywords = [
+    'chemistry',
+    // Class 10 Chemistry Chapters
+    'chemical reaction', 'chemical reactions', 'chemical equation', 'types of chemical reactions', 'corrosion', 'rancidity',
+    'acids, bases', 'acids and bases', 'acid base', 'ph scale', 'salts', 'bleaching powder', 'baking soda',
+    'metals and non-metals', 'metals and non metals', 'metallurgy', 'reactivity series',
+    'carbon and its compounds', 'covalent bond', 'hydrocarbon', 'hydrocarbons', 'soaps and detergents',
+    'periodic classification', 'periodic table',
+    // Class 9 Chemistry Chapters
+    'matter in our surroundings', 'states of matter', 'evaporation', 'latent heat',
+    'is matter around us pure', 'matter around us pure', 'pure substance', 'colloid', 'suspension',
+    'atoms and molecules', 'mole concept', 'chemical formula',
+    'structure of the atom', 'structure of atom', 'atomic structure', 'valency', 'isotopes', 'isobars',
+    // Class 11 & 12 Chemistry
+    'basic concepts of chemistry', 'chemical bonding', 'thermodynamics', 'equilibrium', 'redox',
+    'organic chemistry', 'haloalkanes', 'alcohols', 'phenols', 'aldehydes', 'ketones', 'amines',
+    'coordination compounds', 'solutions', 'electrochemistry', 'chemical kinetics', 'd-and-f block'
+  ];
+  if (chemistryKeywords.some((kw) => immediateContext.includes(kw))) {
+    return 'Tapur Ma\'am (Chemistry Specialist)';
+  }
+
+  // D. PHYSICS CHAPTERS & TOPICS (Safe keywords only; no raw substrings like 'ac' or 'emi')
+  const physicsKeywords = [
+    'physics',
+    // Class 10 Physics Chapters
+    'light - reflection', 'light reflection', 'reflection and refraction', 'refraction', 'spherical mirror', 'lenses', 'ray optics',
+    'human eye', 'colourful world', 'prism', 'dispersion', 'atmospheric refraction',
+    'electricity', 'electric current', 'electric potential', 'ohm\'s law', 'resistance', 'joule\'s heating',
+    'magnetic effects', 'magnetic effect', 'magnetic field', 'electromagnet', 'solenoid', 'fleming', 'electromagnetic induction',
+    'sources of energy', 'energy sources',
+    // Class 9 Physics Chapters
+    'motion', 'speed and velocity', 'acceleration', 'distance-time', 'equations of motion',
+    'force and laws', 'force & laws', 'laws of motion', 'newton\'s laws', 'inertia', 'momentum',
+    'gravitation', 'gravity', 'universal law of gravitation', 'free fall', 'thrust and pressure', 'archimedes principle',
+    'work and energy', 'work & energy', 'kinetic energy', 'potential energy', 'law of conservation of energy',
+    'sound', 'propagation of sound', 'echo', 'sonar', 'ultrasound',
+    // Class 11 & 12 Physics Chapters
+    'kinematics', 'rotational motion', 'oscillations', 'waves', 'electrostatics', 'current electricity',
+    'alternating current', 'wave optics', 'semiconductor', 'modern physics'
+  ];
+  if (physicsKeywords.some((kw) => immediateContext.includes(kw))) {
+    const isSeniorClass = batchStr.includes('11') || batchStr.includes('12');
+    return isSeniorClass ? 'Ravi Sir (Physics Faculty)' : 'Prashant Kirad Sir (Physics Specialist)';
+  }
+
+  // E. SOCIAL SCIENCE / SST CHAPTERS & TOPICS
+  const sstKeywords = [
+    'social science', 'social studies', 'sst', 'history', 'geography', 'civics', 'political science', 'economics',
+    'democratic politics', 'contemporary india', 'india and the contemporary world', 'understanding economic development',
+    'nationalism', 'french revolution', 'russian revolution', 'nazism', 'hitler', 'print culture', 'global world',
+    'resources and development', 'forest and wildlife', 'water resources', 'agriculture', 'minerals and energy', 'manufacturing industries',
+    'power sharing', 'federalism', 'gender religion', 'political parties', 'outcomes of democracy', 'democracy',
+    'development', 'sectors of the indian economy', 'money and credit', 'globalisation', 'consumer rights',
+    'palampur', 'people as resource', 'poverty as a challenge', 'food security', 'drainage', 'climate', 'population'
+  ];
+  if (sstKeywords.some((kw) => immediateContext.includes(kw) || fullContext.includes(kw))) {
+    return 'Digraj Singh Rajput Sir (Social Science Legend)';
+  }
+
+  // F. ENGLISH
+  const englishKeywords = [
+    'english', 'first flight', 'footprints without feet', 'beehive', 'moments', 'flamingo', 'vistas',
+    'grammar', 'tenses', 'modals', 'reported speech', 'writing skills', 'letter writing', 'analytical paragraph'
+  ];
+  if (englishKeywords.some((kw) => immediateContext.includes(kw) || fullContext.includes(kw))) {
+    return 'Taniya Ma\'am (English Faculty)';
+  }
+
+  // G. HINDI
+  const hindiKeywords = [
+    'hindi', 'हिंदी', 'क्षितिज', 'कृतिका', 'स्पर्श', 'संचयन', 'व्याकरण',
+    'kshitij', 'kritika', 'sparsh', 'sanchayan', 'vyakaran'
+  ];
+  if (hindiKeywords.some((kw) => immediateContext.includes(kw) || fullContext.includes(kw))) {
+    return 'Hindi Star Faculty';
+  }
+
+  // H. IT & AI
+  const itAiKeywords = [
+    'artificial intelligence', 'ai', 'information technology', 'it', 'computer', 'python', 'code 402', 'code 417'
+  ];
+  if (itAiKeywords.some((kw) => immediateContext.includes(kw) || fullContext.includes(kw))) {
+    return 'IT & AI Faculty';
+  }
+
+  // I. COMMERCE
+  const commerceKeywords = [
+    'commerce', 'accountancy', 'accounts', 'business studies', 'bst', 'microeconomics', 'macroeconomics'
+  ];
+  if (commerceKeywords.some((kw) => immediateContext.includes(kw) || fullContext.includes(kw))) {
+    return 'Commerce Faculty';
+  }
+
+  // J. HUMANITIES
+  const humanitiesKeywords = [
+    'humanities', 'sociology', 'psychology'
+  ];
+  if (humanitiesKeywords.some((kw) => immediateContext.includes(kw) || fullContext.includes(kw))) {
+    return 'Digraj Singh Rajput Sir (Humanities)';
+  }
+
+  // ----------------------------------------------------
+  // 4. GENERAL FALLBACKS (When inside high-level folders)
+  // ----------------------------------------------------
+  if (fullContext.includes('science')) {
+    const isSeniorClass = batchStr.includes('11') || batchStr.includes('12');
+    return isSeniorClass ? 'Next Toppers Science Faculty' : 'Prashant Kirad Sir (Science Specialist)';
+  }
+
+  if (batchStr.includes('nirmaan')) {
+    return 'Prashant Kirad Sir (Foundation Mentor)';
+  }
+
+  if (batchStr.includes('aarambh')) {
+    return 'Next Toppers Star Faculty';
   }
 
   return 'Next Toppers Faculty';

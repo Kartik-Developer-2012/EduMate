@@ -31,7 +31,7 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
 
   const mediaInfo = extractMediaInfo(item);
   const completed = isLectureCompleted(item?.entity_id);
-  const teacherName = getTeacherForContent(item);
+  const teacherName = item?.teacherName || getTeacherForContent(item, item?.folderHistory || [], item?.batchTitle || item?.courseTitle || '');
   const effectiveCourseId = courseId || item?.course_id || item?.data?.course_id;
 
   // 1. Resolve media stream on mount

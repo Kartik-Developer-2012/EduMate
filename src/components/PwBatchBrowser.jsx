@@ -159,12 +159,16 @@ export default function PwBatchBrowser({
   };
 
   const handlePlayVideoItem = (video) => {
+    const teacherName = video.faculty || video.teacherName || getPwTeacherName(video, activeSubject?.subject || activeSubject?.subjectName || activeSubject?.name);
     const formattedItem = {
       ...video,
       id: video._id || video.id,
       entity_id: video._id || video.id,
       title: video.topic || video.title || 'Physics Wallah Lecture',
       course_id: batch.id,
+      provider: 'pw',
+      teacherName,
+      faculty: teacherName,
       data: {
         file_url: video.videoUrl || video.url || video.link || '',
         thumbnail: video.thumbnail || video.previewImage || batch.thumbnail,
@@ -182,12 +186,16 @@ export default function PwBatchBrowser({
       pdfUrl = await fetchPwPdf(batch.id, subjectId, doc._id);
     }
 
+    const teacherName = doc.faculty || doc.teacherName || getPwTeacherName(doc, activeSubject?.subject || activeSubject?.subjectName || activeSubject?.name);
     const formattedItem = {
       ...doc,
       id: doc._id || doc.id,
       entity_id: doc._id || doc.id,
       title: doc.topic || doc.title || 'Class Notes PDF',
       course_id: batch.id,
+      provider: 'pw',
+      teacherName,
+      faculty: teacherName,
       data: {
         file_url: pdfUrl,
         file_type: 1,

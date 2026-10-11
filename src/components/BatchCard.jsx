@@ -66,9 +66,6 @@ export default function BatchCard({ batch, onSelect }) {
           }`}>
             {batch.title || batch.batchName}
           </h3>
-          <p className="text-[11px] text-neutral-400 mt-1 flex items-center gap-1.5">
-            <span>{batch.byName || (isPw ? 'PW Star Faculty' : 'Next Toppers Faculty')}</span>
-          </p>
         </div>
 
         {/* Action Controls */}

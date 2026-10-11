@@ -24,7 +24,7 @@ export default function PdfViewerModal({ item, courseId, onClose }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const bookmarked = isBookmarked(item?.entity_id);
-  const teacherName = getTeacherForContent(item);
+  const teacherName = item?.teacherName || getTeacherForContent(item, item?.folderHistory || [], item?.batchTitle || item?.courseTitle || '');
 
   // Auto-resolve PDF stream on mount
   useEffect(() => {

@@ -62,6 +62,8 @@ export default function FolderBrowser({
   useEffect(() => {
     async function loadContent() {
       setLoading(true);
+      setActiveTab('all');
+      setSearchFilter('');
       try {
         const items = await fetchFolderContent(batch.id, currentFolder.id);
         setContentItems(items || []);
@@ -76,49 +78,105 @@ export default function FolderBrowser({
   }, [batch.id, currentFolder.id]);
 
   const openFolder = (folderId, folderTitle) => {
-    setFolderHistory((prev) => [...prev, { id: folderId, title: folderTitle }]);
+    setActiveTab('all');
     setSearchFilter('');
+    setFolderHistory((prev) => [...prev, { id: folderId, title: folderTitle }]);
   };
 
   const navigateToBreadcrumb = (index) => {
-    setFolderHistory((prev) => prev.slice(0, index + 1));
+    setActiveTab('all');
     setSearchFilter('');
+    setFolderHistory((prev) => prev.slice(0, index + 1));
   };
 
-  // Content type counts
+  // Helper to determine if an item or folder matches a specific category tab
+  const itemMatchesCategory = (item, tab) => {
+    if (tab === 'all') return true;
+
+    // 1. Direct File Item
+    if (item.type === 'file') {
+      const isVideo = item.data?.file_type === 2 || (item.data?.video_type > 0);
+      const isPdf = item.data?.file_type === 1;
+
+      if (tab === 'video') return isVideo;
+      if (tab === 'pdf') return isPdf;
+      if (tab === 'test') return false;
+    }
+
+    // 2. Direct Test Item
+    if (item.type === 'test') {
+      return tab === 'test';
+    }
+
+    // 3. Folder Item (Intelligent categorization by folder counts and keywords)
+    if (item.type === 'folder') {
+      const title = (item.title || '').toLowerCase();
+      const fCounts = item.data?.content_counts || {};
+      const videoCount = (fCounts.video?.paid || 0) + (fCounts.video?.free || 0);
+      const pdfCount = (fCounts.pdf?.paid || 0) + (fCounts.pdf?.free || 0);
+      const testCount = (fCounts.test?.paid || 0) + (fCounts.test?.free || 0);
+
+      if (tab === 'video') {
+        return (
+          videoCount > 0 ||
+          title.includes('lecture') ||
+          title.includes('video') ||
+          title.includes('class') ||
+          title.includes('session')
+        );
+      }
+
+      if (tab === 'pdf') {
+        return (
+          pdfCount > 0 ||
+          title.includes('note') ||
+          title.includes('dpp') ||
+          title.includes('pdf') ||
+          title.includes('material') ||
+          title.includes('assignment') ||
+          title.includes('subjective') ||
+          title.includes('formula') ||
+          title.includes('ncert')
+        );
+      }
+
+      if (tab === 'test') {
+        return (
+          testCount > 0 ||
+          title.includes('test') ||
+          title.includes('quiz') ||
+          title.includes('assessment') ||
+          title.includes('exam')
+        );
+      }
+    }
+
+    return true;
+  };
+
+  // Content type counts for current view
   const counts = useMemo(() => {
     let videos = 0;
     let pdfs = 0;
     let tests = 0;
-    let folders = 0;
 
     contentItems.forEach((item) => {
-      if (item.type === 'folder') folders += 1;
-      else if (item.type === 'file') {
-        if (item.data?.file_type === 2 || item.data?.video_type > 0) videos += 1;
-        else if (item.data?.file_type === 1) pdfs += 1;
-      } else if (item.type === 'test') tests += 1;
+      if (itemMatchesCategory(item, 'video')) videos += 1;
+      if (itemMatchesCategory(item, 'pdf')) pdfs += 1;
+      if (itemMatchesCategory(item, 'test')) tests += 1;
     });
 
-    return { videos, pdfs, tests, folders, total: contentItems.length };
+    return { videos, pdfs, tests, total: contentItems.length };
   }, [contentItems]);
 
-  // Filtered items
+  // Filtered items based on activeTab and search filter
   const filteredItems = useMemo(() => {
+    const q = searchFilter.toLowerCase().trim();
     return contentItems.filter((item) => {
-      const matchSearch = item.title.toLowerCase().includes(searchFilter.toLowerCase().trim());
-      if (!matchSearch) return false;
-
-      if (activeTab === 'video') {
-        return item.type === 'file' && (item.data?.file_type === 2 || item.data?.video_type > 0);
+      if (q && !item.title.toLowerCase().includes(q)) {
+        return false;
       }
-      if (activeTab === 'pdf') {
-        return item.type === 'file' && item.data?.file_type === 1;
-      }
-      if (activeTab === 'test') {
-        return item.type === 'test';
-      }
-      return true;
+      return itemMatchesCategory(item, activeTab);
     });
   }, [contentItems, activeTab, searchFilter]);
 
@@ -209,33 +267,47 @@ export default function FolderBrowser({
 
       {/* Filter Tabs & Search Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
-        {/* Category Tabs */}
+        {/* Category Tabs: Root directory only shows All Items; inside subjects/subfolders all options appear */}
         <div className="flex items-center gap-1.5 bg-[#141419] p-1 rounded-xl border border-white/[0.08] overflow-x-auto">
-          {[
-            { id: 'all', label: 'All Items', count: counts.total },
-            { id: 'video', label: 'Lectures', count: counts.videos },
-            { id: 'pdf', label: 'Notes & DPP', count: counts.pdfs },
-            { id: 'test', label: 'Mock Tests', count: counts.tests },
-          ].map((tab) => (
+          {folderHistory.length <= 1 ? (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap btn-press ${
-                activeTab === tab.id
-                  ? 'bg-amber-400 text-black font-bold'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
+              type="button"
+              className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-amber-400 text-black flex items-center gap-1.5 whitespace-nowrap"
             >
-              <span>{tab.label}</span>
-              {tab.count > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                  activeTab === tab.id ? 'bg-black text-amber-400' : 'bg-neutral-800 text-neutral-300'
-                }`}>
-                  {tab.count}
+              <span>All Items</span>
+              {counts.total > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-black text-amber-400">
+                  {counts.total}
                 </span>
               )}
             </button>
-          ))}
+          ) : (
+            [
+              { id: 'all', label: 'All Items', count: counts.total },
+              { id: 'video', label: 'Lectures', count: counts.videos },
+              { id: 'pdf', label: 'Notes & DPP', count: counts.pdfs },
+              { id: 'test', label: 'Mock Tests', count: counts.tests },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap btn-press ${
+                  activeTab === tab.id
+                    ? 'bg-amber-400 text-black font-bold'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <span>{tab.label}</span>
+                {tab.count > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                    activeTab === tab.id ? 'bg-black text-amber-400' : 'bg-neutral-800 text-neutral-300'
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))
+          )}
         </div>
 
         {/* Quick Search in this folder */}
@@ -329,6 +401,13 @@ export default function FolderBrowser({
               const posterUrl = item.data?.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80';
               const dateText = item.data?.created_at ? new Date(item.data.created_at * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '';
 
+              const enrichedItem = {
+                ...item,
+                teacherName,
+                folderHistory,
+                batchTitle: batch.title
+              };
+
               return (
                 <div
                   key={item.entity_id || idx}
@@ -336,7 +415,7 @@ export default function FolderBrowser({
                 >
                   {/* Video Poster Section */}
                   <div 
-                    onClick={() => onPlayVideo(item)}
+                    onClick={() => onPlayVideo(enrichedItem)}
                     className="relative aspect-video w-full bg-black overflow-hidden cursor-pointer"
                   >
                     <img
@@ -386,7 +465,7 @@ export default function FolderBrowser({
 
                       {/* Lecture Title */}
                       <h4 
-                        onClick={() => onPlayVideo(item)}
+                        onClick={() => onPlayVideo(enrichedItem)}
                         className="text-xs sm:text-sm font-semibold text-neutral-100 leading-snug line-clamp-2 cursor-pointer group-hover:text-amber-400 transition-colors"
                       >
                         {item.title}
@@ -417,7 +496,7 @@ export default function FolderBrowser({
 
                       <button
                         type="button"
-                        onClick={() => onPlayVideo(item)}
+                        onClick={() => onPlayVideo(enrichedItem)}
                         className="px-3.5 py-1.5 rounded-lg bg-amber-400 hover:bg-yellow-400 text-black text-xs font-bold flex items-center gap-1.5 transition-colors btn-press shadow-sm"
                       >
                         <Play className="w-3 h-3 fill-black" />
@@ -432,6 +511,13 @@ export default function FolderBrowser({
             // 3. NOTES / PDF CARD
             if (item.type === 'file' && item.data?.file_type === 1) {
               const bookmarked = isBookmarked(item.entity_id);
+              const enrichedItem = {
+                ...item,
+                teacherName,
+                folderHistory,
+                batchTitle: batch.title
+              };
+
               return (
                 <div
                   key={item.entity_id || idx}
@@ -449,7 +535,7 @@ export default function FolderBrowser({
                     </div>
 
                     <h4 
-                      onClick={() => onViewPdf(item)}
+                      onClick={() => onViewPdf(enrichedItem)}
                       className="text-xs sm:text-sm font-semibold text-neutral-100 group-hover:text-red-400 cursor-pointer transition-colors line-clamp-2 leading-snug"
                     >
                       {item.title}
@@ -470,7 +556,7 @@ export default function FolderBrowser({
 
                     <button
                       type="button"
-                      onClick={() => onViewPdf(item)}
+                      onClick={() => onViewPdf(enrichedItem)}
                       className="px-3.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs font-semibold flex items-center gap-1.5 btn-press transition-colors"
                     >
                       <FileText className="w-3.5 h-3.5" />
