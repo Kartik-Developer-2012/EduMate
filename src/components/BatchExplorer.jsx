@@ -107,13 +107,13 @@ export default function BatchExplorer({
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
       
       {/* Platform Provider Switcher Bar */}
-      <div className="mb-6 p-4 sm:p-5 rounded-3xl card-surface flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="mb-6 p-4 sm:p-5 rounded-3xl card-surface flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         
         {/* Provider Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-[var(--color-bg)] rounded-2xl border border-[var(--color-border)] w-full md:w-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-[var(--color-bg)] rounded-2xl border border-[var(--color-border)] w-full md:w-auto overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveProvider('all')}
-            className={`flex-1 md:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 btn-press ${
+            className={`flex-1 md:flex-initial px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap btn-press ${
               activeProvider === 'all'
                 ? 'bg-[#1D3557] text-[#F1FAEE] shadow-sm'
                 : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
@@ -125,7 +125,7 @@ export default function BatchExplorer({
 
           <button
             onClick={() => setActiveProvider('pw')}
-            className={`flex-1 md:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 btn-press ${
+            className={`flex-1 md:flex-initial px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap btn-press ${
               activeProvider === 'pw'
                 ? 'bg-[#457B9D] text-[#F1FAEE] shadow-sm'
                 : 'text-[var(--color-text-secondary)] hover:text-[#A8DADC]'
@@ -137,7 +137,7 @@ export default function BatchExplorer({
 
           <button
             onClick={() => setActiveProvider('nt')}
-            className={`flex-1 md:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 btn-press ${
+            className={`flex-1 md:flex-initial px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap btn-press ${
               activeProvider === 'nt'
                 ? 'bg-[#1D3557] text-[#F1FAEE] shadow-sm'
                 : 'text-[var(--color-text-secondary)] hover:text-[#A8DADC]'
@@ -149,8 +149,8 @@ export default function BatchExplorer({
         </div>
 
         {/* Status / Counts */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="px-3.5 py-1.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] text-right">
+        <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+          <div className="px-3 py-1.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] text-right">
             <span className="text-xs font-bold text-[#A8DADC] mr-1.5">{filteredBatches.length}</span>
             <span className="text-[10px] text-[var(--color-text-secondary)] font-medium">Batches Live</span>
           </div>
@@ -164,7 +164,7 @@ export default function BatchExplorer({
 
       {/* Physics Wallah Auth Required Banner (If PW tab and unauthorized) */}
       {activeProvider === 'pw' && pwUnauthorized && !pwUser && (
-        <div className="mb-8 p-6 rounded-3xl bg-[#112033] border border-[#223E5E] shadow-md relative overflow-hidden">
+        <div className="mb-8 p-5 sm:p-6 rounded-3xl bg-[#112033] border border-[#223E5E] shadow-md relative overflow-hidden">
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
             <div className="flex items-start gap-3.5">
               <div className="w-12 h-12 rounded-2xl bg-[#1D3557] border border-[#457B9D]/40 flex items-center justify-center shrink-0 text-[#A8DADC]">
@@ -198,7 +198,7 @@ export default function BatchExplorer({
       )}
 
       {/* Direct Batch ID Lookup Bar */}
-      <div className="mb-6 p-4 rounded-2xl card-surface flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="mb-6 p-4 rounded-2xl card-surface flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
           <Sparkles className="w-4 h-4 text-[#A8DADC] shrink-0" />
           <span>Have a specific PW or Next Toppers Batch ID? Access it directly:</span>
@@ -210,7 +210,7 @@ export default function BatchExplorer({
             value={directBatchId}
             onChange={(e) => setDirectBatchId(e.target.value)}
             placeholder="Enter Batch ID (e.g. 176 or PW ID)..."
-            className="w-full sm:w-64 bg-[var(--color-bg)] border border-[var(--color-border)] text-xs rounded-xl px-3 py-2 text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] outline-none focus:border-[#457B9D] focus:ring-1 focus:ring-[#457B9D]"
+            className="flex-1 sm:w-64 bg-[var(--color-bg)] border border-[var(--color-border)] text-xs rounded-xl px-3 py-2 text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] outline-none focus:border-[#457B9D] focus:ring-1 focus:ring-[#457B9D]"
           />
           <button
             type="submit"

@@ -5,6 +5,8 @@ import {
   Calendar, 
   CheckCircle2, 
   ChevronRight, 
+  ChevronDown,
+  ChevronUp,
   FileText, 
   Layers, 
   Loader2, 
@@ -54,6 +56,7 @@ export default function PwBatchBrowser({
 
   // Search in chapter contents
   const [searchQuery, setSearchQuery] = useState('');
+  const [mobileChapterMenuOpen, setMobileChapterMenuOpen] = useState(false);
 
   const enrolled = isEnrolled(batch?.id);
 
@@ -258,9 +261,9 @@ export default function PwBatchBrowser({
       </div>
 
       {/* Batch Hero Banner */}
-      <div className="relative mb-8 rounded-3xl card-surface overflow-hidden p-6 sm:p-8">
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-6">
-          <div className="w-full md:w-64 h-36 sm:h-40 rounded-2xl overflow-hidden shrink-0 border border-[var(--color-border)] bg-[var(--color-surface-hover)] shadow-sm">
+      <div className="relative mb-6 sm:mb-8 rounded-3xl card-surface overflow-hidden p-4 sm:p-8">
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-5 sm:gap-6">
+          <div className="w-full md:w-64 aspect-video md:h-40 rounded-2xl overflow-hidden shrink-0 border border-[var(--color-border)] bg-[var(--color-surface-hover)] shadow-sm">
             <img
               src={batchDetails?.thumbnail || batch?.thumbnail}
               alt={batch.title}
@@ -354,8 +357,8 @@ export default function PwBatchBrowser({
       {/* Main Content Layout: Chapters Sidebar + Content Items Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left Column: Chapters / Units List */}
-        <div className="lg:col-span-4 card-surface rounded-3xl p-4 sm:p-5 flex flex-col h-[650px]">
+        {/* Left Column: Chapters / Units List (Desktop Sidebar) */}
+        <div className="hidden lg:flex lg:col-span-4 card-surface rounded-3xl p-4 sm:p-5 flex-col h-[650px]">
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--color-border)]">
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-[#A8DADC]" />
@@ -419,14 +422,92 @@ export default function PwBatchBrowser({
         {/* Right Column: Chapter Contents (Lectures, Notes, DPPs) */}
         <div className="lg:col-span-8 flex flex-col gap-4">
           
+          {/* Mobile Chapter Selector (Visible only on mobile/tablet < lg screens) */}
+          <div className="block lg:hidden card-surface rounded-2xl p-3.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#A8DADC] uppercase tracking-wider mb-0.5">
+                  <Layers className="w-3.5 h-3.5 text-[#A8DADC]" />
+                  <span>
+                    Chapter {selectedChapter ? `#${chapters.findIndex(c => (c._id || c.id) === (selectedChapter?._id || selectedChapter?.id)) + 1} of ${chapters.length}` : 'Selection'}
+                  </span>
+                </div>
+                <h3 className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)] truncate">
+                  {selectedChapter?.topicName || selectedChapter?.title || 'Select a Chapter'}
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMobileChapterMenuOpen(!mobileChapterMenuOpen)}
+                className="px-3 py-1.5 rounded-xl bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[#F1FAEE] text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-all btn-press"
+              >
+                <span>{mobileChapterMenuOpen ? 'Hide' : 'Change'}</span>
+                {mobileChapterMenuOpen ? (
+                  <ChevronUp className="w-3.5 h-3.5 text-[#A8DADC]" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 text-[#A8DADC]" />
+                )}
+              </button>
+            </div>
+
+            {/* Collapsible Mobile Chapter List */}
+            {mobileChapterMenuOpen && (
+              <div className="mt-3 pt-3 border-t border-[var(--color-border)] max-h-60 overflow-y-auto space-y-1.5 custom-scrollbar pr-1 animate-in fade-in duration-150">
+                {loadingChapters ? (
+                  <div className="flex items-center justify-center py-6 text-[var(--color-text-secondary)]">
+                    <Loader2 className="w-5 h-5 animate-spin text-[#A8DADC] mr-2" />
+                    <span className="text-xs">Loading live chapters...</span>
+                  </div>
+                ) : chapters.length === 0 ? (
+                  <div className="text-center py-4 text-xs text-[var(--color-text-muted)]">
+                    No chapters found for this subject.
+                  </div>
+                ) : (
+                  chapters.map((ch, idx) => {
+                    const chId = ch._id || ch.id;
+                    const isSelected = (selectedChapter?._id || selectedChapter?.id) === chId;
+                    const chapterTitle = ch.topicName || ch.title || `Chapter ${idx + 1}`;
+
+                    return (
+                      <button
+                        key={chId || idx}
+                        type="button"
+                        onClick={() => {
+                          setSelectedChapter(ch);
+                          setMobileChapterMenuOpen(false);
+                        }}
+                        className={`w-full text-left p-2.5 rounded-xl text-xs font-medium transition-all flex items-center justify-between gap-2.5 ${
+                          isSelected
+                            ? 'bg-[#1D3557] border border-[#457B9D] text-[#F1FAEE] font-bold shadow-sm'
+                            : 'bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 truncate min-w-0">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                            isSelected ? 'bg-[#457B9D] text-[#F1FAEE]' : 'bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)]'
+                          }`}>
+                            #{idx + 1}
+                          </span>
+                          <span className="truncate">{chapterTitle}</span>
+                        </div>
+                        <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-[#A8DADC]' : 'text-[var(--color-text-muted)]'}`} />
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Content Sub-Navigation Bar */}
-          <div className="p-3 card-surface rounded-2xl flex flex-wrap items-center justify-between gap-3">
+          <div className="p-3 card-surface rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             
             {/* Content Tabs */}
-            <div className="flex items-center gap-1.5 bg-[var(--color-bg)] p-1 rounded-xl border border-[var(--color-border)]">
+            <div className="flex items-center gap-1.5 bg-[var(--color-bg)] p-1 rounded-xl border border-[var(--color-border)] overflow-x-auto scrollbar-none">
               <button
                 onClick={() => setActiveTab('videos')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all btn-press ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all btn-press ${
                   activeTab === 'videos'
                     ? 'bg-[#457B9D] text-[#F1FAEE] shadow-sm'
                     : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
@@ -438,7 +519,7 @@ export default function PwBatchBrowser({
 
               <button
                 onClick={() => setActiveTab('notes')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all btn-press ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all btn-press ${
                   activeTab === 'notes'
                     ? 'bg-[#457B9D] text-[#F1FAEE] shadow-sm'
                     : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
@@ -450,7 +531,7 @@ export default function PwBatchBrowser({
 
               <button
                 onClick={() => setActiveTab('dppNotes')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all btn-press ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all btn-press ${
                   activeTab === 'dppNotes'
                     ? 'bg-[#457B9D] text-[#F1FAEE] shadow-sm'
                     : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
@@ -462,7 +543,7 @@ export default function PwBatchBrowser({
 
               <button
                 onClick={() => setActiveTab('dppVideos')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all btn-press ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all btn-press ${
                   activeTab === 'dppVideos'
                     ? 'bg-[#457B9D] text-[#F1FAEE] shadow-sm'
                     : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
@@ -474,7 +555,7 @@ export default function PwBatchBrowser({
 
               <button
                 onClick={() => setActiveTab('schedule')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all btn-press ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all btn-press ${
                   activeTab === 'schedule'
                     ? 'bg-[#457B9D] text-[#F1FAEE] shadow-sm'
                     : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
@@ -487,7 +568,7 @@ export default function PwBatchBrowser({
 
             {/* Filter Search */}
             {activeTab !== 'schedule' && (
-              <div className="relative min-w-[180px]">
+              <div className="relative w-full sm:w-auto min-w-0 sm:min-w-[180px]">
                 <Search className="w-3.5 h-3.5 text-[var(--color-text-muted)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"

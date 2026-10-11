@@ -230,7 +230,7 @@ export default function FolderBrowser({
       </div>
 
       {/* Breadcrumb Navigation Bar */}
-      <div className="flex items-center justify-between gap-3 p-3 rounded-xl card-surface mb-6 overflow-x-auto text-xs text-[var(--color-text-secondary)]">
+      <div className="flex items-center justify-between gap-3 p-3 rounded-xl card-surface mb-6 overflow-x-auto scrollbar-none text-xs text-[var(--color-text-secondary)]">
         <div className="flex items-center gap-1.5 shrink-0">
           {folderHistory.map((folder, index) => {
             const isLast = index === folderHistory.length - 1;
@@ -238,7 +238,7 @@ export default function FolderBrowser({
               <React.Fragment key={folder.id + '-' + index}>
                 <button
                   onClick={() => navigateToBreadcrumb(index)}
-                  className={`flex items-center gap-1.5 py-1 px-2.5 rounded-lg transition-all btn-press ${
+                  className={`flex items-center gap-1.5 py-1 px-2.5 rounded-lg whitespace-nowrap transition-all shrink-0 btn-press ${
                     isLast 
                       ? 'bg-[#457B9D] text-[#F1FAEE] font-bold shadow-sm' 
                       : 'hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'
@@ -256,7 +256,7 @@ export default function FolderBrowser({
         {folderHistory.length > 1 && (
           <button
             onClick={() => navigateToBreadcrumb(folderHistory.length - 2)}
-            className="flex items-center gap-1 text-[11px] font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] bg-[var(--color-surface-hover)] border border-[var(--color-border)] px-3 py-1 rounded-lg shrink-0 btn-press"
+            className="flex items-center gap-1 text-[11px] font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] bg-[var(--color-surface-hover)] border border-[var(--color-border)] px-3 py-1 rounded-lg shrink-0 btn-press whitespace-nowrap ml-2"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Up One Level</span>
@@ -267,7 +267,7 @@ export default function FolderBrowser({
       {/* Filter Tabs & Search Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
         {/* Category Tabs */}
-        <div className="flex items-center gap-1.5 bg-[var(--color-surface)] p-1 rounded-xl border border-[var(--color-border)] overflow-x-auto">
+        <div className="flex items-center gap-1.5 bg-[var(--color-surface)] p-1 rounded-xl border border-[var(--color-border)] overflow-x-auto scrollbar-none">
           {folderHistory.length <= 1 ? (
             <button
               type="button"

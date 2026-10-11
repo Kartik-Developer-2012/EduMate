@@ -234,23 +234,23 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
         className="w-full max-w-5xl bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[95vh]"
       >
         {/* Top Header */}
-        <div className="p-3.5 sm:p-4 bg-[var(--color-surface)] border-b border-[var(--color-border)] flex items-center justify-between gap-4 shrink-0">
+        <div className="p-3 sm:p-4 bg-[var(--color-surface)] border-b border-[var(--color-border)] flex items-center justify-between gap-3 shrink-0">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded bg-[#1D3557] text-[#F1FAEE] text-[10px] font-bold border border-[#457B9D]/40">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+              <span className="px-2 py-0.5 rounded bg-[#1D3557] text-[#F1FAEE] text-[10px] font-bold border border-[#457B9D]/40 shrink-0">
                 LECTURE
               </span>
-              <span className="text-[11px] text-[#A8DADC] font-medium flex items-center gap-1">
+              <span className="text-[11px] text-[#A8DADC] font-medium flex items-center gap-1 shrink-0">
                 <User className="w-3.5 h-3.5 text-[#A8DADC]" />
-                <span>{teacherName}</span>
+                <span className="truncate max-w-[120px] sm:max-w-none">{teacherName}</span>
               </span>
-              <span className="text-[var(--color-text-muted)]">•</span>
-              <span className="text-[11px] text-[#A8DADC] font-medium flex items-center gap-1">
+              <span className="text-[var(--color-text-muted)] hidden sm:inline">•</span>
+              <span className="text-[11px] text-[#A8DADC] font-medium hidden sm:flex items-center gap-1 shrink-0">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#A8DADC]" />
                 <span>Zero Ads</span>
               </span>
             </div>
-            <h3 className="text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold truncate">
+            <h3 className="text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold truncate leading-tight">
               {item.title}
             </h3>
           </div>
@@ -258,7 +258,9 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-colors"
+            className="p-2 rounded-xl text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-colors shrink-0"
+            title="Close Video"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -295,7 +297,7 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
                 preload="auto"
                 poster={mediaInfo.thumbnail}
                 onError={() => setHasPlaybackError(true)}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain aspect-video block"
               />
 
               {/* Error Recovery / In-Player Stream Reload */}
@@ -323,76 +325,79 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
         </div>
 
         {/* Controls Toolbar */}
-        <div className="p-3 sm:p-4 bg-[var(--color-surface)] border-t border-[var(--color-border)] flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
-          {/* Speed Buttons */}
-          {streamType !== 'youtube' && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-[var(--color-text-secondary)] flex items-center gap-1 mr-1">
-                <Gauge className="w-3.5 h-3.5 text-[#A8DADC]" />
-                <span>Speed:</span>
-              </span>
-              {[0.75, 1.0, 1.25, 1.5, 2.0].map((s) => (
+        <div className="p-3 sm:p-4 bg-[var(--color-surface)] border-t border-[var(--color-border)] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs shrink-0 overflow-x-hidden">
+          {/* Scrollable Adjustments (Speed & Quality) */}
+          <div className="flex items-center gap-3 overflow-x-auto scrollbar-none pb-1 sm:pb-0 min-w-0">
+            {/* Speed Buttons */}
+            {streamType !== 'youtube' && (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[var(--color-text-secondary)] flex items-center gap-1 mr-0.5">
+                  <Gauge className="w-3.5 h-3.5 text-[#A8DADC]" />
+                  <span className="hidden sm:inline">Speed:</span>
+                </span>
+                {[0.75, 1.0, 1.25, 1.5, 2.0].map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => changeSpeed(s)}
+                    className={`px-2 py-1 rounded-md font-mono text-[11px] font-semibold transition-all shrink-0 btn-press ${
+                      playbackSpeed === s
+                        ? 'bg-[#457B9D] text-[#F1FAEE] font-bold shadow-sm'
+                        : 'bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                    }`}
+                  >
+                    {s}x
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Quality Selector (Auto, 720p, 480p, 360p, 240p) */}
+            {hlsLevels.length > 0 && (
+              <div className="flex items-center gap-1.5 shrink-0 pl-2 sm:pl-3 border-l border-[var(--color-border)]">
+                <span className="text-[var(--color-text-secondary)] flex items-center gap-1 mr-0.5">
+                  <Tv className="w-3.5 h-3.5 text-[#A8DADC]" />
+                  <span className="hidden sm:inline">Quality:</span>
+                </span>
+
+                {/* Auto Quality */}
                 <button
-                  key={s}
                   type="button"
-                  onClick={() => changeSpeed(s)}
-                  className={`px-2 py-1 rounded-md font-mono text-[11px] font-semibold transition-all btn-press ${
-                    playbackSpeed === s
+                  onClick={() => handleLevelChange(-1)}
+                  className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all shrink-0 btn-press ${
+                    currentLevel === -1
                       ? 'bg-[#457B9D] text-[#F1FAEE] font-bold shadow-sm'
                       : 'bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
                   }`}
                 >
-                  {s}x
+                  Auto
                 </button>
-              ))}
-            </div>
-          )}
 
-          {/* Quality Selector (Auto, 720p, 480p, 360p, 240p) */}
-          {hlsLevels.length > 0 && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-[var(--color-text-secondary)] flex items-center gap-1 mr-1">
-                <Tv className="w-3.5 h-3.5 text-[#A8DADC]" />
-                <span>Quality:</span>
-              </span>
-
-              {/* Auto Quality */}
-              <button
-                type="button"
-                onClick={() => handleLevelChange(-1)}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all btn-press ${
-                  currentLevel === -1
-                    ? 'bg-[#457B9D] text-[#F1FAEE] font-bold shadow-sm'
-                    : 'bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                }`}
-              >
-                Auto
-              </button>
-
-              {/* Available levels from master playlist */}
-              {hlsLevels.map((lvl) => (
-                <button
-                  key={lvl.index}
-                  type="button"
-                  onClick={() => handleLevelChange(lvl.index)}
-                  className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all btn-press ${
-                    currentLevel === lvl.index
-                      ? 'bg-[#457B9D] text-[#F1FAEE] font-bold shadow-sm'
-                      : 'bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                  }`}
-                >
-                  {lvl.label}
-                </button>
-              ))}
-            </div>
-          )}
+                {/* Available levels from master playlist */}
+                {hlsLevels.map((lvl) => (
+                  <button
+                    key={lvl.index}
+                    type="button"
+                    onClick={() => handleLevelChange(lvl.index)}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all shrink-0 btn-press ${
+                      currentLevel === lvl.index
+                        ? 'bg-[#457B9D] text-[#F1FAEE] font-bold shadow-sm'
+                        : 'bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                    }`}
+                  >
+                    {lvl.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[var(--color-border)]">
             <button
               type="button"
               onClick={() => toggleLectureComplete(item.entity_id)}
-              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 text-xs transition-colors btn-press ${
+              className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-semibold flex items-center justify-center gap-1.5 text-xs transition-colors btn-press ${
                 completed
                   ? 'bg-[#457B9D]/20 text-[#A8DADC] border border-[#457B9D]/40'
                   : 'bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
@@ -405,8 +410,9 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
             <button
               type="button"
               onClick={toggleFullscreen}
-              className="p-1.5 rounded-lg bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+              className="p-2 rounded-lg bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] shrink-0"
               title="Fullscreen"
+              aria-label="Fullscreen"
             >
               <Maximize className="w-4 h-4" />
             </button>

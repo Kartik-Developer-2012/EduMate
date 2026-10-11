@@ -67,7 +67,7 @@ export default function BatchCard({ batch, onSelect }) {
               e.stopPropagation();
               toggleEnroll(batch.id);
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors btn-press ${
+            className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors btn-press min-h-[38px] ${
               enrolled
                 ? 'bg-[#457B9D]/20 text-[#A8DADC] border border-[#457B9D]/40'
                 : 'bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]'
@@ -92,7 +92,7 @@ export default function BatchCard({ batch, onSelect }) {
               e.stopPropagation();
               onSelect(batch);
             }}
-            className="px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] transition-all btn-press shadow-sm"
+            className="px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] transition-all btn-press shadow-sm min-h-[38px]"
           >
             <span>Let's Study</span>
             <Play className="w-3 h-3 fill-[#F1FAEE]" />

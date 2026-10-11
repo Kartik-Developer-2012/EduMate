@@ -64,7 +64,7 @@ export default function AuthGate() {
           shaking ? 'animate-[shake_0.5s_ease-in-out]' : ''
         }`}
       >
-        <div className="p-8 sm:p-10 rounded-3xl card-surface shadow-2xl relative overflow-hidden">
+        <div className="p-5 sm:p-10 rounded-3xl card-surface shadow-2xl relative overflow-hidden">
           
           {/* Brand Accent Strip */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1D3557] via-[#457B9D] to-[#A8DADC]" />
