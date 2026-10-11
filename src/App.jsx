@@ -12,6 +12,7 @@ import { fetchBatches } from './services/api';
 import { fetchPwBatches, fetchPwBatchDetails } from './services/pwApi';
 import { CourseProvider, useCourse } from './context/CourseContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import AuthGate from './components/AuthGate';
 import { ShieldCheck, Sparkles } from 'lucide-react';
 
@@ -157,7 +158,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-neutral-100 flex flex-col font-sans selection:bg-purple-500 selection:text-white">
+    <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text-primary)] flex flex-col font-sans selection:bg-[#A8DADC] selection:text-[#1D3557] transition-colors duration-200">
       {/* Navigation Header */}
       <Navbar
         activeView={activeView}
@@ -250,23 +251,23 @@ function AppContent() {
       />
 
       {/* Footer */}
-      <footer className="w-full py-8 border-t border-white/5 bg-[#0b0b0e] text-center text-xs text-neutral-500 mt-12">
+      <footer className="w-full py-8 border-t border-[var(--color-border)] bg-[var(--color-surface)] text-center text-xs text-[var(--color-text-secondary)] mt-12 transition-colors">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="font-heading font-extrabold text-white tracking-wider">
-              EDU<span className="text-amber-400">MATE</span>
+            <span className="font-heading font-extrabold text-[#F1FAEE] tracking-wider text-sm">
+              EDU<span className="text-[#A8DADC]">MATE</span>
             </span>
-            <span className="text-[10px] text-neutral-600">•</span>
-            <span>Physics Wallah & Next Toppers Unified Platform</span>
+            <span className="text-[10px] text-[var(--color-text-muted)]">•</span>
+            <span className="text-[var(--color-text-secondary)]">Physics Wallah & Next Toppers Unified Platform</span>
           </div>
 
-          <div className="flex items-center gap-4 text-neutral-400 text-[11px]">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+          <div className="flex items-center gap-4 text-[var(--color-text-secondary)] text-[11px]">
+            <span className="flex items-center gap-1.5 text-[#A8DADC] font-semibold">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>100% Free & Ad-Free</span>
             </span>
             <span>•</span>
-            <span className="flex items-center gap-1.5 text-purple-400 font-medium">
+            <span className="flex items-center gap-1.5 text-[#457B9D] font-medium">
               <Sparkles className="w-3.5 h-3.5" />
               <span>100% Dynamic API Fetched</span>
             </span>
@@ -293,8 +294,10 @@ function MainApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

@@ -7,18 +7,15 @@ import {
   ArrowRight, 
   ShieldCheck, 
   Sparkles, 
-  RotateCw, 
   CheckCircle2, 
   AlertCircle, 
-  KeyRound,
-  Search,
-  ExternalLink
+  KeyRound
 } from 'lucide-react';
-import { pwSendOtp, pwVerifyOtp, pwResendOtp, fetchPwServerInfo } from '../services/pwApi';
+import { pwSendOtp, pwVerifyOtp, pwResendOtp } from '../services/pwApi';
 import { useCourse } from '../context/CourseContext';
 
 export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
-  const { setPwUser, pwUser } = useCourse();
+  const { setPwUser } = useCourse();
 
   const [step, setStep] = useState('phone'); // 'phone' | 'otp'
   const [phone, setPhone] = useState('');
@@ -28,7 +25,6 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [timer, setTimer] = useState(0);
-  const [serverInfo, setServerInfo] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -37,7 +33,6 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
       setOtp('');
       setError('');
       setSuccessMsg('');
-      fetchPwServerInfo().then(info => setServerInfo(info)).catch(() => {});
     }
   }, [isOpen]);
 
@@ -134,33 +129,28 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      
-      {/* Background ambient light effects */}
-      <div className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full bg-purple-600/20 blur-[100px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full bg-cyan-600/20 blur-[100px] pointer-events-none"></div>
-
-      <div className="relative w-full max-w-md bg-[#0a0a14] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(147,51,234,0.2)] overflow-hidden">
+      <div className="relative w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden">
         
         {/* Top gradient highlight bar */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500 to-transparent"></div>
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#1D3557] via-[#457B9D] to-[#A8DADC]"></div>
 
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white rounded-full hover:bg-white/5 transition-colors"
+          className="absolute top-4 right-4 p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-full hover:bg-[var(--color-surface-hover)] transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(147,51,234,0.4)]">
-            <Sparkles className="w-6 h-6 text-white" />
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-[#1D3557] border border-[#457B9D]/40 flex items-center justify-center mb-3 shadow-sm">
+            <Sparkles className="w-6 h-6 text-[#A8DADC]" />
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#F1FAEE]">
             {step === 'phone' ? 'Physics Wallah Login' : 'Enter Verification Code'}
           </h2>
-          <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
+          <p className="text-xs text-[var(--color-text-secondary)] mt-1 leading-relaxed">
             {step === 'phone' 
               ? 'Access live enrolled batches, lectures, notes & DPPs directly'
               : `Enter the code sent to +91 ${phone} on ${smsType === '1' ? 'WhatsApp' : 'SMS'}`
@@ -173,14 +163,14 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
           <form onSubmit={handleSendOtp} className="space-y-4">
             
             {/* Delivery Method Selector (WhatsApp / SMS) */}
-            <div className="flex items-center gap-2 p-1 bg-white/5 border border-white/10 rounded-xl">
+            <div className="flex items-center gap-1.5 p-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl">
               <button
                 type="button"
                 onClick={() => setSmsType('1')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold transition-all btn-press ${
                   smsType === '1'
-                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                    : 'text-neutral-400 hover:text-white'
+                    ? 'bg-[#457B9D] text-[#F1FAEE] shadow-sm'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
                 }`}
               >
                 <MessageSquare className="w-3.5 h-3.5" />
@@ -190,10 +180,10 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
               <button
                 type="button"
                 onClick={() => setSmsType('0')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold transition-all btn-press ${
                   smsType === '0'
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-[0_0_12px_rgba(99,102,241,0.3)]'
-                    : 'text-neutral-400 hover:text-white'
+                    ? 'bg-[#1D3557] text-[#F1FAEE] shadow-sm'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
                 }`}
               >
                 <PhoneCall className="w-3.5 h-3.5" />
@@ -203,14 +193,14 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
 
             {/* Phone Input */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-purple-300 tracking-wider uppercase block">
+              <label className="text-[11px] font-semibold text-[var(--color-text-secondary)] tracking-wider uppercase block">
                 Mobile Number
               </label>
-              <div className="flex items-center bg-white/5 border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500 focus-within:shadow-[0_0_15px_rgba(168,85,247,0.25)] focus-within:bg-white/10 transition-all pr-3">
-                <span className="pl-4 pr-2 py-3 text-purple-300 font-semibold border-r border-white/10 text-sm">
+              <div className="flex items-center bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl overflow-hidden focus-within:border-[#457B9D] focus-within:ring-2 focus-within:ring-[#457B9D]/20 transition-all pr-3">
+                <span className="pl-4 pr-2 py-3 text-[#A8DADC] font-bold border-r border-[var(--color-border)] text-sm">
                   +91
                 </span>
-                <Smartphone className="w-4 h-4 text-neutral-400 ml-3 mr-2 shrink-0" />
+                <Smartphone className="w-4 h-4 text-[var(--color-text-muted)] ml-3 mr-2 shrink-0" />
                 <input
                   type="tel"
                   maxLength={10}
@@ -219,7 +209,7 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
                     setPhone(e.target.value.replace(/\D/g, ''));
                     if (error) setError('');
                   }}
-                  className="flex-1 py-3 bg-transparent text-white placeholder-neutral-500 outline-none text-sm font-medium tracking-wide"
+                  className="flex-1 py-3 bg-transparent text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] outline-none text-sm font-medium tracking-wide"
                   placeholder="Enter 10-digit number"
                   autoFocus
                 />
@@ -227,24 +217,24 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
             </div>
 
             {/* Tip Box */}
-            <div className="bg-white/5 border border-white/5 rounded-2xl p-3 space-y-1">
+            <div className="bg-[#112033] border border-[#223E5E] rounded-2xl p-3 space-y-1">
               <div className="flex items-start space-x-2">
-                <ShieldCheck className="w-4 h-4 text-purple-400 mt-0.5 shrink-0" />
-                <p className="text-[11px] text-neutral-300 leading-relaxed">
+                <ShieldCheck className="w-4 h-4 text-[#A8DADC] mt-0.5 shrink-0" />
+                <p className="text-[11px] text-[var(--color-text-primary)] leading-relaxed">
                   OTP will be sent directly via{' '}
-                  <strong className={smsType === '1' ? 'text-emerald-400' : 'text-cyan-400'}>
+                  <strong className="text-[#A8DADC]">
                     {smsType === '1' ? 'WhatsApp (Fast & Recommended)' : 'SMS'}
                   </strong>.
                 </p>
               </div>
-              <p className="text-[10.5px] text-neutral-400 pl-6 leading-relaxed">
-                ⚡ <span className="text-purple-300 font-medium">Tip:</span> WhatsApp OTP arrives instantly. Ensure your mobile number is registered on Physics Wallah.
+              <p className="text-[10.5px] text-[var(--color-text-secondary)] pl-6 leading-relaxed">
+                ⚡ <span className="text-[#A8DADC] font-medium">Tip:</span> WhatsApp OTP arrives instantly. Ensure your mobile number is registered on Physics Wallah.
               </p>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="flex items-center gap-2 bg-red-950/40 border border-red-500/30 rounded-xl p-3 text-red-400 text-xs font-medium">
+              <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-400 text-xs font-medium">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{error}</span>
               </div>
@@ -254,7 +244,7 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
             <button
               disabled={loading || phone.length !== 10}
               type="submit"
-              className="w-full relative group overflow-hidden bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold py-3.5 rounded-xl transition-all shadow-[0_4px_20px_rgba(147,51,234,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full relative group overflow-hidden bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] font-bold py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed btn-press"
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
                 {loading ? (
@@ -275,13 +265,13 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
           <form onSubmit={handleVerifyOtp} className="space-y-4">
             
             {/* Phone Info Badge with Edit button */}
-            <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-2.5">
+            <div className="flex items-center justify-between bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-4 py-2.5">
               <div className="flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-purple-400" />
-                <span className="text-xs font-semibold text-white tracking-wide">
+                <Smartphone className="w-4 h-4 text-[#A8DADC]" />
+                <span className="text-xs font-semibold text-[var(--color-text-primary)] tracking-wide">
                   +91 {phone}
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-medium">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1D3557] text-[#A8DADC] border border-[#457B9D]/40 font-medium">
                   {smsType === '1' ? 'WhatsApp' : 'SMS'}
                 </span>
               </div>
@@ -292,7 +282,7 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
                   setOtp('');
                   setError('');
                 }}
-                className="text-xs text-purple-300 hover:text-white font-medium transition-colors"
+                className="text-xs text-[#A8DADC] hover:underline font-medium transition-colors"
               >
                 Change
               </button>
@@ -300,11 +290,11 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
 
             {/* OTP Input */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-purple-300 tracking-wider uppercase block">
+              <label className="text-[11px] font-semibold text-[var(--color-text-secondary)] tracking-wider uppercase block">
                 Verification Code
               </label>
-              <div className="flex items-center bg-white/5 border border-white/10 rounded-xl overflow-hidden focus-within:border-purple-500 focus-within:shadow-[0_0_15px_rgba(168,85,247,0.25)] focus-within:bg-white/10 transition-all pr-3">
-                <KeyRound className="w-4 h-4 text-neutral-400 ml-4 mr-2 shrink-0" />
+              <div className="flex items-center bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl overflow-hidden focus-within:border-[#457B9D] focus-within:ring-2 focus-within:ring-[#457B9D]/20 transition-all pr-3">
+                <KeyRound className="w-4 h-4 text-[var(--color-text-muted)] ml-4 mr-2 shrink-0" />
                 <input
                   type="text"
                   maxLength={6}
@@ -313,7 +303,7 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
                     setOtp(e.target.value.replace(/\D/g, ''));
                     if (error) setError('');
                   }}
-                  className="flex-1 py-3 bg-transparent text-white placeholder-neutral-500 outline-none text-base font-bold tracking-widest"
+                  className="flex-1 py-3 bg-transparent text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] outline-none text-base font-bold tracking-widest"
                   placeholder="• • • •"
                   autoFocus
                 />
@@ -322,9 +312,9 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
 
             {/* Resend actions */}
             <div className="flex items-center justify-between text-xs pt-1">
-              <span className="text-neutral-400">
+              <span className="text-[var(--color-text-secondary)]">
                 {timer > 0 ? (
-                  <span>Resend code in <strong className="text-purple-300">{timer}s</strong></span>
+                  <span>Resend code in <strong className="text-[#A8DADC]">{timer}s</strong></span>
                 ) : (
                   <span>Didn't receive code?</span>
                 )}
@@ -335,15 +325,15 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
                   <button
                     type="button"
                     onClick={() => handleResendOtp('1')}
-                    className="text-emerald-400 hover:text-emerald-300 font-semibold"
+                    className="text-[#A8DADC] hover:underline font-semibold"
                   >
                     WhatsApp
                   </button>
-                  <span className="text-neutral-600">•</span>
+                  <span className="text-[var(--color-text-muted)]">•</span>
                   <button
                     type="button"
                     onClick={() => handleResendOtp('0')}
-                    className="text-purple-400 hover:text-purple-300 font-semibold"
+                    className="text-[#A8DADC] hover:underline font-semibold"
                   >
                     SMS
                   </button>
@@ -353,14 +343,14 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
 
             {/* Messages */}
             {error && (
-              <div className="flex items-center gap-2 bg-red-950/40 border border-red-500/30 rounded-xl p-3 text-red-400 text-xs font-medium">
+              <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-400 text-xs font-medium">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
             {successMsg && (
-              <div className="flex items-center gap-2 bg-emerald-950/40 border border-emerald-500/30 rounded-xl p-3 text-emerald-400 text-xs font-medium">
+              <div className="flex items-center gap-2 bg-[#457B9D]/20 border border-[#457B9D]/40 rounded-xl p-3 text-[#A8DADC] text-xs font-medium">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>{successMsg}</span>
               </div>
@@ -370,7 +360,7 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
             <button
               disabled={loading || otp.length < 4}
               type="submit"
-              className="w-full relative group overflow-hidden bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold py-3.5 rounded-xl transition-all shadow-[0_4px_20px_rgba(147,51,234,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full relative group overflow-hidden bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] font-bold py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed btn-press"
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
                 {loading ? (
@@ -390,9 +380,9 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
         )}
 
         {/* Footer */}
-        <div className="mt-6 text-center border-t border-white/5 pt-4">
-          <p className="text-[10px] text-neutral-500 font-medium tracking-wider uppercase">
-            Powered by <span className="text-purple-400 font-bold tracking-normal text-xs ml-1">EduMate</span>
+        <div className="mt-6 text-center border-t border-[var(--color-border)] pt-4">
+          <p className="text-[10px] text-[var(--color-text-muted)] font-medium tracking-wider uppercase">
+            Powered by <span className="text-[#A8DADC] font-bold tracking-normal text-xs ml-1">EduMate</span>
           </p>
         </div>
       </div>

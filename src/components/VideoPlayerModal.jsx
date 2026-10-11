@@ -228,29 +228,29 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-6 animate-in fade-in duration-200">
       <div 
         id="player-modal-container"
-        className="w-full max-w-5xl bg-[#141419] border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[95vh]"
+        className="w-full max-w-5xl bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[95vh]"
       >
         {/* Top Header */}
-        <div className="p-3.5 sm:p-4 bg-[#141419] border-b border-white/[0.08] flex items-center justify-between gap-4 shrink-0">
+        <div className="p-3.5 sm:p-4 bg-[var(--color-surface)] border-b border-[var(--color-border)] flex items-center justify-between gap-4 shrink-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded bg-amber-400 text-black text-[10px] font-bold">
+              <span className="px-2 py-0.5 rounded bg-[#1D3557] text-[#F1FAEE] text-[10px] font-bold border border-[#457B9D]/40">
                 LECTURE
               </span>
-              <span className="text-[11px] text-amber-400 font-medium flex items-center gap-1">
-                <User className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[11px] text-[#A8DADC] font-medium flex items-center gap-1">
+                <User className="w-3.5 h-3.5 text-[#A8DADC]" />
                 <span>{teacherName}</span>
               </span>
-              <span className="text-neutral-500">•</span>
-              <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" />
+              <span className="text-[var(--color-text-muted)]">•</span>
+              <span className="text-[11px] text-[#A8DADC] font-medium flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#A8DADC]" />
                 <span>Zero Ads</span>
               </span>
             </div>
-            <h3 className="text-white text-xs sm:text-sm font-semibold truncate">
+            <h3 className="text-[var(--color-text-primary)] text-xs sm:text-sm font-semibold truncate">
               {item.title}
             </h3>
           </div>
@@ -258,7 +258,7 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -268,13 +268,13 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
         <div className="relative aspect-video w-full bg-black flex items-center justify-center overflow-hidden">
           {resolving ? (
             <div className="flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-200">
-              <div className="w-14 h-14 rounded-2xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center mb-4">
-                <Loader2 className="w-7 h-7 text-amber-400 animate-spin" />
+              <div className="w-14 h-14 rounded-2xl bg-[#1D3557] border border-[#457B9D]/40 flex items-center justify-center mb-4">
+                <Loader2 className="w-7 h-7 text-[#A8DADC] animate-spin" />
               </div>
               <h4 className="text-sm font-bold text-white mb-1">
                 Connecting to HD Stream...
               </h4>
-              <p className="text-xs text-neutral-400 max-w-sm">
+              <p className="text-xs text-neutral-300 max-w-sm">
                 Bypassing ads and preparing high-definition lecture playback.
               </p>
             </div>
@@ -301,17 +301,17 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
               {/* Error Recovery / In-Player Stream Reload */}
               {hasPlaybackError && (
                 <div className="absolute inset-0 bg-black/95 flex flex-col items-center justify-center p-6 text-center z-20">
-                  <AlertCircle className="w-10 h-10 text-amber-400 mb-2" />
+                  <AlertCircle className="w-10 h-10 text-[#A8DADC] mb-2" />
                   <h4 className="text-sm font-bold text-white mb-1">
                     Stream Notice
                   </h4>
-                  <p className="text-xs text-neutral-400 max-w-md mb-4">
+                  <p className="text-xs text-neutral-300 max-w-md mb-4">
                     {errorMessage || 'The video stream encountered a momentary interruption. Click below to reconnect.'}
                   </p>
                   <button
                     type="button"
                     onClick={retryPlayback}
-                    className="px-4 py-2 bg-amber-400 text-black text-xs font-bold rounded-lg flex items-center gap-1.5 hover:bg-yellow-400 transition-colors btn-press shadow-md"
+                    className="px-4 py-2 bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors btn-press shadow-md"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Reconnect Stream</span>
@@ -323,12 +323,12 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
         </div>
 
         {/* Controls Toolbar */}
-        <div className="p-3 sm:p-4 bg-[#111116] border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
+        <div className="p-3 sm:p-4 bg-[var(--color-surface)] border-t border-[var(--color-border)] flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
           {/* Speed Buttons */}
           {streamType !== 'youtube' && (
             <div className="flex items-center gap-1.5">
-              <span className="text-neutral-400 flex items-center gap-1 mr-1">
-                <Gauge className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[var(--color-text-secondary)] flex items-center gap-1 mr-1">
+                <Gauge className="w-3.5 h-3.5 text-[#A8DADC]" />
                 <span>Speed:</span>
               </span>
               {[0.75, 1.0, 1.25, 1.5, 2.0].map((s) => (
@@ -336,10 +336,10 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
                   key={s}
                   type="button"
                   onClick={() => changeSpeed(s)}
-                  className={`px-2 py-1 rounded-md font-mono text-[11px] font-semibold transition-colors ${
+                  className={`px-2 py-1 rounded-md font-mono text-[11px] font-semibold transition-all btn-press ${
                     playbackSpeed === s
-                      ? 'bg-amber-400 text-black font-bold'
-                      : 'bg-neutral-800 text-neutral-300 hover:text-white'
+                      ? 'bg-[#457B9D] text-[#F1FAEE] font-bold shadow-sm'
+                      : 'bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
                   }`}
                 >
                   {s}x
@@ -351,8 +351,8 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
           {/* Quality Selector (Auto, 720p, 480p, 360p, 240p) */}
           {hlsLevels.length > 0 && (
             <div className="flex items-center gap-1.5">
-              <span className="text-neutral-400 flex items-center gap-1 mr-1">
-                <Tv className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[var(--color-text-secondary)] flex items-center gap-1 mr-1">
+                <Tv className="w-3.5 h-3.5 text-[#A8DADC]" />
                 <span>Quality:</span>
               </span>
 
@@ -360,10 +360,10 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
               <button
                 type="button"
                 onClick={() => handleLevelChange(-1)}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors ${
+                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all btn-press ${
                   currentLevel === -1
-                    ? 'bg-amber-400 text-black font-bold'
-                    : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                    ? 'bg-[#457B9D] text-[#F1FAEE] font-bold shadow-sm'
+                    : 'bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
                 }`}
               >
                 Auto
@@ -375,10 +375,10 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
                   key={lvl.index}
                   type="button"
                   onClick={() => handleLevelChange(lvl.index)}
-                  className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors ${
+                  className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all btn-press ${
                     currentLevel === lvl.index
-                      ? 'bg-amber-400 text-black font-bold'
-                      : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                      ? 'bg-[#457B9D] text-[#F1FAEE] font-bold shadow-sm'
+                      : 'bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
                   }`}
                 >
                   {lvl.label}
@@ -392,20 +392,20 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
             <button
               type="button"
               onClick={() => toggleLectureComplete(item.entity_id)}
-              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 text-xs transition-colors ${
+              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 text-xs transition-colors btn-press ${
                 completed
-                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                  : 'bg-neutral-800 text-neutral-300 hover:text-white'
+                  ? 'bg-[#457B9D]/20 text-[#A8DADC] border border-[#457B9D]/40'
+                  : 'bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
               }`}
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#A8DADC]" />
               <span>{completed ? 'Watched' : 'Mark as Watched'}</span>
             </button>
 
             <button
               type="button"
               onClick={toggleFullscreen}
-              className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white"
+              className="p-1.5 rounded-lg bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
               title="Fullscreen"
             >
               <Maximize className="w-4 h-4" />
