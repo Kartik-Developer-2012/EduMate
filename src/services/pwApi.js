@@ -6,11 +6,17 @@ const DIRECT_PW_ORIGIN = 'https://physicswallah.studybeepro.site';
 
 // Helper to make live requests to PW backend with credentials (cookies)
 async function pwFetch(endpoint, options = {}) {
+  let customSession = null;
+  try {
+    customSession = localStorage.getItem('PW_MASTER_SESSION');
+  } catch {}
+
   const fetchOptions = {
     ...options,
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...(customSession ? { 'x-pw-session': customSession } : {}),
       ...(options.headers || {})
     }
   };
@@ -42,7 +48,8 @@ async function pwFetch(endpoint, options = {}) {
 
     // Direct fallback to live origin if proxy fails
     try {
-      const directRes = await fetch(`${DIRECT_PW_ORIGIN}${endpoint}`, fetchOptions);
+      const directUrl = `${DIRECT_PW_ORIGIN}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+      const directRes = await fetch(directUrl, fetchOptions);
       const data2 = await directRes.json();
       if (!directRes.ok) {
         const error2 = new Error(data2.message || `HTTP ${directRes.status}`);
@@ -273,7 +280,52 @@ export async function pwVerifyOtp(phoneNumber, otp) {
     localStorage.setItem('PW_USER_DATA', JSON.stringify(res.user));
   }
 
+  // If master session was saved by proxy, cache it locally too
+  if (res.masterSession || res.sessionData) {
+    localStorage.setItem('PW_MASTER_SESSION', JSON.stringify(res.masterSession || res.sessionData));
+  } else if (res.user) {
+    localStorage.setItem('PW_MASTER_SESSION', JSON.stringify({ user: res.user, updatedAt: Date.now() }));
+  }
+
+  window.dispatchEvent(new Event('pwAuthChanged'));
   return res;
+}
+
+export async function checkPwMasterStatus() {
+  try {
+    const res = await pwFetch('/master-session-status');
+    if (res && res.isMasterActive) {
+      if (!localStorage.getItem('PW_MASTER_SESSION')) {
+        localStorage.setItem('PW_MASTER_SESSION', JSON.stringify({
+          active: true,
+          user: res.user,
+          updatedAt: res.updatedAt
+        }));
+      }
+      return res;
+    }
+  } catch (err) {
+    console.debug('[pwApi] Master status check returned:', err.message);
+  }
+
+  const stored = getStoredPwMasterSession();
+  return {
+    isMasterActive: Boolean(stored),
+    user: stored?.user || null
+  };
+}
+
+export function getStoredPwMasterSession() {
+  try {
+    const raw = localStorage.getItem('PW_MASTER_SESSION');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isPwMasterActive() {
+  return Boolean(getStoredPwMasterSession());
 }
 
 export async function pwResendOtp(phoneNumber, smsType = '1') {
@@ -296,11 +348,15 @@ export async function fetchPwServerInfo() {
   }
 }
 
-export async function pwLogout() {
+export async function pwLogout(keepMaster = true) {
   localStorage.removeItem('PW_USER_DATA');
+  if (!keepMaster) {
+    localStorage.removeItem('PW_MASTER_SESSION');
+  }
   try {
     await pwFetch('/logout', { method: 'POST' });
   } catch {}
+  window.dispatchEvent(new Event('pwAuthChanged'));
 }
 
 export function getStoredPwUser() {

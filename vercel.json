@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/pw/(.*)",
-      "destination": "https://physicswallah.studybeepro.site/api/$1"
+      "destination": "/api/pw-proxy?endpoint=$1"
     },
     {
       "source": "/api/nts/(.*)",

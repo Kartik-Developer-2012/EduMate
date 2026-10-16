@@ -28,7 +28,7 @@ export default function Navbar({
   setSearchQuery,
   onOpenPwLogin 
 }) {
-  const { enrolledBatches, pwUser, logoutPwUser } = useCourse();
+  const { enrolledBatches, pwUser, logoutPwUser, masterActive } = useCourse();
   const { logout, authEmail } = useAuth();
   const { isDark, toggleTheme } = useTheme();
 
@@ -142,19 +142,25 @@ export default function Navbar({
           </button>
 
           {/* Physics Wallah Student Auth Button */}
-          {pwUser ? (
+          {pwUser || masterActive ? (
             <div className="flex items-center gap-2 pl-2 border-l border-[var(--color-border)]">
-              <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#1D3557] border border-[#457B9D]/40 text-[#A8DADC] text-xs font-medium">
-                <User className="w-3.5 h-3.5 text-[#A8DADC]" />
-                <span className="truncate max-w-[100px]">{pwUser.name || pwUser.phoneNumber || 'PW Student'}</span>
-              </div>
               <button
-                onClick={logoutPwUser}
-                className="p-1.5 text-[var(--color-text-secondary)] hover:text-red-400 hover:bg-[var(--color-surface-hover)] rounded-lg transition-colors"
-                title="Log Out of PW"
+                onClick={onOpenPwLogin}
+                className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#1D3557] hover:bg-[#223E5E] border border-[#457B9D]/40 text-[#A8DADC] text-xs font-medium transition-colors"
+                title="Physics Wallah Lifetime Active • Click to manage"
               >
-                <LogOut className="w-4 h-4" />
+                <Sparkles className="w-3.5 h-3.5 text-[#A8DADC]" />
+                <span className="truncate max-w-[120px] font-semibold">{pwUser?.name || 'PW Lifetime Active'}</span>
               </button>
+              {pwUser && (
+                <button
+                  onClick={logoutPwUser}
+                  className="p-1.5 text-[var(--color-text-secondary)] hover:text-red-400 hover:bg-[var(--color-surface-hover)] rounded-lg transition-colors"
+                  title="Log Out of Personal PW Session"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ) : (
             <button
@@ -162,7 +168,7 @@ export default function Navbar({
               className="px-3 py-1.5 rounded-xl bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all btn-press"
             >
               <Smartphone className="w-3.5 h-3.5 text-[#F1FAEE]" />
-              <span>PW Login</span>
+              <span>One-Time PW Setup</span>
             </button>
           )}
 
@@ -337,21 +343,30 @@ export default function Navbar({
                 </span>
               </div>
 
-              {pwUser ? (
+              {pwUser || masterActive ? (
                 <div className="flex items-center justify-between pt-1">
-                  <div className="text-xs text-[var(--color-text-secondary)] truncate mr-2">
-                    {pwUser.name || pwUser.phoneNumber || 'PW Student'}
-                  </div>
                   <button
                     onClick={() => {
-                      logoutPwUser();
+                      onOpenPwLogin();
                       setIsMobileMenuOpen(false);
                     }}
-                    className="px-2.5 py-1 text-[11px] font-semibold text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg flex items-center gap-1 transition-colors"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-[#A8DADC] truncate mr-2"
                   >
-                    <LogOut className="w-3 h-3" />
-                    <span>Log Out</span>
+                    <Sparkles className="w-3.5 h-3.5 text-[#A8DADC]" />
+                    <span className="truncate">{pwUser?.name || 'PW Lifetime Active'}</span>
                   </button>
+                  {pwUser && (
+                    <button
+                      onClick={() => {
+                        logoutPwUser();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="px-2.5 py-1 text-[11px] font-semibold text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg flex items-center gap-1 transition-colors"
+                    >
+                      <LogOut className="w-3 h-3" />
+                      <span>Log Out</span>
+                    </button>
+                  )}
                 </div>
               ) : (
                 <button
@@ -362,7 +377,7 @@ export default function Navbar({
                   className="w-full mt-1.5 py-2 px-3 rounded-lg bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all"
                 >
                   <Smartphone className="w-3.5 h-3.5" />
-                  <span>Connect Mobile OTP (Free)</span>
+                  <span>One-Time PW Setup (Lifetime)</span>
                 </button>
               )}
             </div>

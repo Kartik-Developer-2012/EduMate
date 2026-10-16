@@ -17,7 +17,7 @@ import AuthGate from './components/AuthGate';
 import { ShieldCheck, Sparkles } from 'lucide-react';
 
 function AppContent() {
-  const { activeProvider, pwUser } = useCourse();
+  const { activeProvider, pwUser, masterActive } = useCourse();
 
   // Next Toppers dynamic batches
   const [ntBatches, setNtBatches] = useState([]);
@@ -71,7 +71,9 @@ function AppContent() {
     try {
       const res = await fetchPwBatches(page, query);
       if (res.unauthorized) {
-        setPwUnauthorized(true);
+        if (!masterActive) {
+          setPwUnauthorized(true);
+        }
         if (!append) setPwBatches([]);
         setHasMorePw(false);
       } else if (res.success) {
@@ -87,12 +89,12 @@ function AppContent() {
     } finally {
       setLoadingPw(false);
     }
-  }, []);
+  }, [masterActive]);
 
   // Fetch PW batches whenever activeProvider changes to 'pw' or on initial load / auth state change
   useEffect(() => {
     loadPwBatches(1, searchQuery, false);
-  }, [loadPwBatches, pwUser]);
+  }, [loadPwBatches, pwUser, masterActive]);
 
   // Handle Load More PW batches
   const handleLoadMorePw = () => {

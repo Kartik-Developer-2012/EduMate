@@ -4,7 +4,6 @@ import {
   Layers, 
   BookOpen, 
   Sparkles, 
-  Lock, 
   LogIn, 
   ArrowRight, 
   ShieldCheck, 
@@ -39,7 +38,7 @@ export default function BatchExplorer({
   hasMorePw = false,
   onDirectBatchLookup
 }) {
-  const { activeProvider, setActiveProvider, pwUser } = useCourse();
+  const { activeProvider, setActiveProvider, pwUser, masterActive } = useCourse();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [directBatchId, setDirectBatchId] = useState('');
 
@@ -162,23 +161,51 @@ export default function BatchExplorer({
         </div>
       </div>
 
-      {/* Physics Wallah Auth Required Banner (If PW tab and unauthorized) */}
-      {activeProvider === 'pw' && pwUnauthorized && !pwUser && (
+      {/* Physics Wallah Lifetime Active Indicator */}
+      {activeProvider === 'pw' && (masterActive || pwUser) && (
+        <div className="mb-6 p-4 rounded-2xl bg-[#112033] border border-[#223E5E] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-[#1D3557] border border-[#457B9D]/40 flex items-center justify-center shrink-0 text-[#A8DADC]">
+              <Sparkles className="w-4 h-4 text-[#A8DADC]" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-[#F1FAEE] flex items-center gap-2">
+                <span>Physics Wallah: Lifetime Access Active</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#457B9D]/20 text-[#A8DADC] border border-[#457B9D]/40 font-semibold">
+                  No Login Required
+                </span>
+              </p>
+              <p className="text-[11px] text-[var(--color-text-secondary)] mt-0.5">
+                All batches, live lectures, notes & DPPs are unlocked for all users.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onOpenPwLogin}
+            className="text-xs text-[#A8DADC] hover:underline font-semibold shrink-0 self-start sm:self-auto"
+          >
+            Re-link / Manage PW
+          </button>
+        </div>
+      )}
+
+      {/* Physics Wallah One-Time Setup Banner (Only if unauthorized and no master session) */}
+      {activeProvider === 'pw' && pwUnauthorized && !pwUser && !masterActive && (
         <div className="mb-8 p-5 sm:p-6 rounded-3xl bg-[#112033] border border-[#223E5E] shadow-md relative overflow-hidden">
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
             <div className="flex items-start gap-3.5">
               <div className="w-12 h-12 rounded-2xl bg-[#1D3557] border border-[#457B9D]/40 flex items-center justify-center shrink-0 text-[#A8DADC]">
-                <Lock className="w-6 h-6" />
+                <Sparkles className="w-6 h-6" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-[#F1FAEE] flex items-center gap-2">
-                  <span>Physics Wallah Student Login</span>
+                  <span>One-Time Physics Wallah Activation</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#457B9D]/20 text-[#A8DADC] border border-[#457B9D]/40 font-semibold">
-                    Free Access
+                    One-Time OTP
                   </span>
                 </h3>
                 <p className="text-xs text-[var(--color-text-secondary)] mt-1 max-w-xl leading-relaxed">
-                  Connect your PW account with instant WhatsApp or SMS OTP to dynamically fetch all your enrolled batches, live lectures, notes, DPPs, and schedules with zero ads.
+                  Enter your mobile number & OTP once. Our system securely activates all Physics Wallah batches for lifetime, allowing all students and users to watch lectures, download notes & DPPs with zero login required.
                 </p>
               </div>
             </div>
@@ -189,7 +216,7 @@ export default function BatchExplorer({
                 className="w-full md:w-auto px-5 py-3 rounded-xl bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all btn-press"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Login with Mobile OTP</span>
+                <span>One-Time PW Setup</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>

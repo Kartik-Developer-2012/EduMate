@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { fetchPwAboutMe, getStoredPwUser, pwLogout } from '../services/pwApi';
+import { fetchPwAboutMe, getStoredPwUser, pwLogout, checkPwMasterStatus, isPwMasterActive } from '../services/pwApi';
 
 const CourseContext = createContext();
 
@@ -9,8 +9,24 @@ export function CourseProvider({ children }) {
     return localStorage.getItem('edumate_active_provider') || localStorage.getItem('studybee_active_provider') || 'all';
   });
 
-  // PW Authentication State
+  // PW Authentication State & Master Lifetime Session
   const [pwUser, setPwUserState] = useState(() => getStoredPwUser());
+  const [masterActive, setMasterActive] = useState(() => isPwMasterActive());
+
+  useEffect(() => {
+    checkPwMasterStatus().then((res) => {
+      if (res?.isMasterActive) {
+        setMasterActive(true);
+      }
+    }).catch(() => {});
+
+    const onAuthChanged = () => {
+      setPwUserState(getStoredPwUser());
+      setMasterActive(isPwMasterActive());
+    };
+    window.addEventListener('pwAuthChanged', onAuthChanged);
+    return () => window.removeEventListener('pwAuthChanged', onAuthChanged);
+  }, []);
 
   // Enrolled Batches (Unified, handles both NT numbers and PW strings)
   const [enrolledBatches, setEnrolledBatches] = useState(() => {
@@ -178,6 +194,8 @@ export function CourseProvider({ children }) {
         pwUser,
         setPwUser,
         logoutPwUser,
+        masterActive,
+        setMasterActive,
         enrolledBatches,
         toggleEnroll,
         isEnrolled,

@@ -27,19 +27,46 @@ export default async (req, context) => {
   }
 
   try {
+    const fetchHeaders = {
+      'User-Agent': req.headers?.get('user-agent') || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+      'Accept': 'application/pdf, text/html, */*'
+    };
+
+    if (targetUrl.includes('cloudfront') || targetUrl.includes('studybeepro') || targetUrl.includes('nexttoppers')) {
+      fetchHeaders['Referer'] = 'https://nt.studybeepro.site/';
+      fetchHeaders['Origin'] = 'https://nt.studybeepro.site';
+    }
+
     const upstreamRes = await fetch(targetUrl, {
       method: req.method === 'HEAD' ? 'HEAD' : 'GET',
-      headers: {
-        'User-Agent': req.headers?.get('user-agent') || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-        'Accept': 'application/pdf, */*'
-      }
+      headers: fetchHeaders
     });
 
-    const responseHeaders = new Headers(upstreamRes.headers);
+    if (req.method === 'HEAD') {
+      const headHeaders = new Headers(CORS_HEADERS);
+      headHeaders.set('Content-Type', 'application/pdf');
+      headHeaders.set('Accept-Ranges', 'bytes');
+      return new Response(null, { status: upstreamRes.status, headers: headHeaders });
+    }
+
+    if (!upstreamRes.ok) {
+      console.warn(`[stream-pdf] Upstream returned HTTP ${upstreamRes.status} for ${targetUrl}`);
+      return new Response(`Failed to fetch upstream PDF: HTTP ${upstreamRes.status}`, {
+        status: upstreamRes.status,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'text/plain' }
+      });
+    }
+
+    const arrayBuffer = await upstreamRes.arrayBuffer();
+
+    const responseHeaders = new Headers();
     responseHeaders.set('Access-Control-Allow-Origin', '*');
+    responseHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    responseHeaders.set('Access-Control-Allow-Headers', '*');
     responseHeaders.set('Content-Type', 'application/pdf');
-    responseHeaders.delete('X-Frame-Options');
-    responseHeaders.delete('Content-Security-Policy');
+    responseHeaders.set('Content-Length', String(arrayBuffer.byteLength));
+    responseHeaders.set('Accept-Ranges', 'bytes');
+    responseHeaders.set('Cache-Control', 'public, max-age=86400');
 
     if (isDownload) {
       responseHeaders.set('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
@@ -47,14 +74,15 @@ export default async (req, context) => {
       responseHeaders.set('Content-Disposition', 'inline');
     }
 
-    return new Response(upstreamRes.body, {
-      status: upstreamRes.status,
+    return new Response(arrayBuffer, {
+      status: 200,
       headers: responseHeaders
     });
   } catch (err) {
-    return new Response('Failed to proxy PDF document', {
+    console.error('[stream-pdf] Proxy error:', err);
+    return new Response('Failed to proxy PDF document: ' + err.message, {
       status: 502,
-      headers: CORS_HEADERS
+      headers: { ...CORS_HEADERS, 'Content-Type': 'text/plain' }
     });
   }
 };
@@ -74,26 +102,44 @@ export async function handler(event, context) {
   }
 
   try {
+    const fetchHeaders = {
+      'User-Agent': event.headers?.['user-agent'] || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+      'Accept': 'application/pdf, text/html, */*'
+    };
+
+    if (targetUrl.includes('cloudfront') || targetUrl.includes('studybeepro') || targetUrl.includes('nexttoppers')) {
+      fetchHeaders['Referer'] = 'https://nt.studybeepro.site/';
+      fetchHeaders['Origin'] = 'https://nt.studybeepro.site';
+    }
+
     const upstreamRes = await fetch(targetUrl, {
       method: event.httpMethod === 'HEAD' ? 'HEAD' : 'GET',
-      headers: {
-        'User-Agent': event.headers?.['user-agent'] || 'Mozilla/5.0',
-        'Accept': 'application/pdf, */*'
-      }
+      headers: fetchHeaders
     });
+
+    if (!upstreamRes.ok) {
+      return {
+        statusCode: upstreamRes.status,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'text/plain' },
+        body: `Failed to fetch upstream PDF: HTTP ${upstreamRes.status}`
+      };
+    }
 
     const arrayBuffer = await upstreamRes.arrayBuffer();
     return {
-      statusCode: upstreamRes.status,
+      statusCode: 200,
       headers: {
         ...CORS_HEADERS,
         'Content-Type': 'application/pdf',
+        'Content-Length': String(arrayBuffer.byteLength),
+        'Accept-Ranges': 'bytes',
+        'Cache-Control': 'public, max-age=86400',
         'Content-Disposition': isDownload ? `attachment; filename="${encodeURIComponent(filename)}"` : 'inline'
       },
       isBase64Encoded: true,
       body: Buffer.from(arrayBuffer).toString('base64')
     };
   } catch (err) {
-    return { statusCode: 502, headers: CORS_HEADERS, body: 'Failed to proxy PDF document' };
+    return { statusCode: 502, headers: CORS_HEADERS, body: 'Failed to proxy PDF document: ' + err.message };
   }
 }

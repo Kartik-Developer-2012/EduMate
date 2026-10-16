@@ -15,7 +15,7 @@ import { pwSendOtp, pwVerifyOtp, pwResendOtp } from '../services/pwApi';
 import { useCourse } from '../context/CourseContext';
 
 export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
-  const { setPwUser } = useCourse();
+  const { setPwUser, setMasterActive } = useCourse();
 
   const [step, setStep] = useState('phone'); // 'phone' | 'otp'
   const [phone, setPhone] = useState('');
@@ -61,7 +61,7 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
       if (res && res.success !== false) {
         setStep('otp');
         setTimer(45);
-        setSuccessMsg(res.message || `OTP sent via ${smsType === '1' ? 'WhatsApp' : 'SMS'}!`);
+        setSuccessMsg(res.message || `OTP sent via ${smsType === '1' ? 'WhatsApp' : 'SMS'}! Check your phone.`);
       } else {
         setError(res?.message || 'Failed to send OTP. Please try again.');
       }
@@ -86,16 +86,17 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
     try {
       const res = await pwVerifyOtp(phone, cleanOtp);
       if (res && res.success !== false) {
-        setSuccessMsg(res.message || 'OTP Verified Successfully!');
+        setSuccessMsg('🎉 One-Time Setup Complete! All Physics Wallah batches are now unlocked for lifetime with zero login required.');
+        if (setMasterActive) setMasterActive(true);
         if (res.user) {
           setPwUser(res.user);
         } else {
-          setPwUser({ phoneNumber: phone, name: 'PW Student' });
+          setPwUser({ phoneNumber: phone, name: 'PW Master User' });
         }
         setTimeout(() => {
           if (onSuccess) onSuccess();
           onClose();
-        }, 800);
+        }, 1200);
       } else {
         setError(res?.message || 'OTP verification failed. Please try again.');
       }
@@ -148,14 +149,19 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
             <Sparkles className="w-6 h-6 text-[#A8DADC]" />
           </div>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#F1FAEE]">
-            {step === 'phone' ? 'Physics Wallah Login' : 'Enter Verification Code'}
+            {step === 'phone' ? 'Physics Wallah One-Time Setup' : 'Enter Verification Code'}
           </h2>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-1 leading-relaxed">
+          <p className="text-xs text-[var(--color-text-secondary)] mt-1.5 leading-relaxed">
             {step === 'phone' 
-              ? 'Access live enrolled batches, lectures, notes & DPPs directly'
+              ? 'Enter mobile number & OTP once. Our system unlocks lifetime PW batches with zero student login needed.'
               : `Enter the code sent to +91 ${phone} on ${smsType === '1' ? 'WhatsApp' : 'SMS'}`
             }
           </p>
+
+          <div className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1D3557]/60 border border-[#457B9D]/30 text-[10.5px] font-semibold text-[#A8DADC]">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#A8DADC]" />
+            <span>One-Time OTP • Lifetime Batches for Everyone</span>
+          </div>
         </div>
 
         {/* Forms */}
