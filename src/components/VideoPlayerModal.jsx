@@ -9,7 +9,8 @@ import {
   AlertCircle, 
   RotateCcw,
   Loader2,
-  Tv
+  Tv,
+  ArrowLeft
 } from 'lucide-react';
 import Hls from 'hls.js';
 import { extractMediaInfo, resolveMediaContent, getTeacherForContent } from '../services/api';
@@ -235,6 +236,16 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
       >
         {/* Top Header */}
         <div className="p-3 sm:p-4 bg-[var(--color-surface)] border-b border-[var(--color-border)] flex items-center justify-between gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[#F1FAEE] hover:border-[#457B9D] text-xs font-semibold transition-all btn-press shrink-0"
+            title="Go Back to Chapter"
+          >
+            <ArrowLeft className="w-4 h-4 text-[#A8DADC]" />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
               <span className="px-2 py-0.5 rounded bg-[#1D3557] text-[#F1FAEE] text-[10px] font-bold border border-[#457B9D]/40 shrink-0">

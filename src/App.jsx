@@ -13,11 +13,13 @@ import { fetchPwBatches, fetchPwBatchDetails } from './services/pwApi';
 import { CourseProvider, useCourse } from './context/CourseContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { RouterProvider, useRouter } from './context/RouterContext';
 import AuthGate from './components/AuthGate';
 import { ShieldCheck, Sparkles } from 'lucide-react';
 
 function AppContent() {
-  const { activeProvider, pwUser, masterActive } = useCourse();
+  const { pwUser, masterActive } = useCourse();
+  const { route, navigate, openModal, closeModal, getCachedMediaItem } = useRouter();
 
   // Next Toppers dynamic batches
   const [ntBatches, setNtBatches] = useState([]);
@@ -31,9 +33,9 @@ function AppContent() {
   const [hasMorePw, setHasMorePw] = useState(false);
 
   // General App State
-  const [activeView, setActiveView] = useState('batches'); // 'batches' | 'enrolled'
+  const [activeView, setActiveView] = useState(route.view || 'batches'); // 'batches' | 'enrolled'
   const [selectedBatch, setSelectedBatch] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(route.searchQuery || '');
   const [showPwAuthModal, setShowPwAuthModal] = useState(false);
 
   // Media & Test Modals
@@ -104,7 +106,7 @@ function AppContent() {
   };
 
   // Direct Batch ID Lookup (Works dynamically for both PW string IDs & NT numeric IDs)
-  const handleDirectBatchLookup = async (batchId) => {
+  const handleDirectBatchLookup = useCallback(async (batchId) => {
     if (!batchId) return;
     const trimmed = String(batchId).trim();
 
@@ -149,14 +151,113 @@ function AppContent() {
         isLivePw: true
       });
     }
-  };
+  }, [ntBatches, pwBatches]);
 
+  // Sync route.view with activeView
+  useEffect(() => {
+    if (route.view && route.view !== activeView) {
+      setActiveView(route.view);
+    }
+  }, [route.view, activeView]);
+
+  // Sync route.batchId with selectedBatch
+  useEffect(() => {
+    if (route.batchId) {
+      const currentId = String(selectedBatch?.id || selectedBatch?.batchId || '');
+      if (currentId !== String(route.batchId)) {
+        handleDirectBatchLookup(route.batchId);
+      }
+    } else if (!route.batchId && selectedBatch) {
+      setSelectedBatch(null);
+    }
+  }, [route.batchId, selectedBatch, handleDirectBatchLookup]);
+
+  // Sync PDF modal with route
+  useEffect(() => {
+    if (route.pdfId) {
+      const currentPdfId = String(viewingPdfItem?.id || viewingPdfItem?._id || viewingPdfItem?.entity_id || '');
+      if (currentPdfId !== String(route.pdfId)) {
+        const cached = getCachedMediaItem(route.pdfId);
+        if (cached) {
+          setViewingPdfItem(cached);
+        }
+      }
+    } else if (!route.pdfId && viewingPdfItem) {
+      setViewingPdfItem(null);
+    }
+  }, [route.pdfId, viewingPdfItem, getCachedMediaItem]);
+
+  // Sync Video modal with route
+  useEffect(() => {
+    if (route.videoId) {
+      const currentVideoId = String(playingVideoItem?.id || playingVideoItem?._id || playingVideoItem?.entity_id || '');
+      if (currentVideoId !== String(route.videoId)) {
+        const cached = getCachedMediaItem(route.videoId);
+        if (cached) {
+          setPlayingVideoItem(cached);
+        }
+      }
+    } else if (!route.videoId && playingVideoItem) {
+      setPlayingVideoItem(null);
+    }
+  }, [route.videoId, playingVideoItem, getCachedMediaItem]);
+
+  // Sync Test modal with route
+  useEffect(() => {
+    if (route.testId) {
+      const currentTestId = String(activeTestItem?.id || activeTestItem?._id || activeTestItem?.entity_id || '');
+      if (currentTestId !== String(route.testId)) {
+        const cached = getCachedMediaItem(route.testId);
+        if (cached) {
+          setActiveTestItem(cached);
+        }
+      }
+    } else if (!route.testId && activeTestItem) {
+      setActiveTestItem(null);
+    }
+  }, [route.testId, activeTestItem, getCachedMediaItem]);
+
+  // User Actions with Routing
   const handleSelectBatch = (batch) => {
     setSelectedBatch(batch);
+    const bId = String(batch.id || batch.batchId);
+    const prov = batch.provider || (batch.batchId ? 'pw' : 'nt');
+    navigate({ batchId: bId, provider: prov }, { push: true });
   };
 
   const handleBackToBatches = () => {
     setSelectedBatch(null);
+    navigate({ batchId: null }, { push: true });
+  };
+
+  const handlePlayVideo = (item) => {
+    setPlayingVideoItem(item);
+    openModal('video', item);
+  };
+
+  const handleViewPdf = (item) => {
+    setViewingPdfItem(item);
+    openModal('pdf', item);
+  };
+
+  const handleStartTest = (item) => {
+    setActiveTestItem(item);
+    openModal('test', item);
+  };
+
+  const handleCloseVideo = () => {
+    setPlayingVideoItem(null);
+    closeModal('video');
+  };
+
+  const handleClosePdf = () => {
+    setViewingPdfItem(null);
+    closeModal('pdf');
+  };
+
+  const handleCloseTest = () => {
+    setActiveTestItem(null);
+    closeModal('test');
   };
 
   return (
@@ -167,6 +268,7 @@ function AppContent() {
         setActiveView={(view) => {
           setActiveView(view);
           setSelectedBatch(null);
+          navigate({ view: view === 'batches' ? null : view, batchId: null }, { push: true });
         }}
         selectedBatch={selectedBatch}
         onBackToBatches={handleBackToBatches}
@@ -182,23 +284,26 @@ function AppContent() {
             <PwBatchBrowser
               batch={selectedBatch}
               onBack={handleBackToBatches}
-              onPlayVideo={(item) => setPlayingVideoItem(item)}
-              onViewPdf={(item) => setViewingPdfItem(item)}
+              onPlayVideo={handlePlayVideo}
+              onViewPdf={handleViewPdf}
             />
           ) : (
             <FolderBrowser
               batch={selectedBatch}
               onBack={handleBackToBatches}
-              onPlayVideo={(item) => setPlayingVideoItem(item)}
-              onViewPdf={(item) => setViewingPdfItem(item)}
-              onStartTest={(item) => setActiveTestItem(item)}
+              onPlayVideo={handlePlayVideo}
+              onViewPdf={handleViewPdf}
+              onStartTest={handleStartTest}
             />
           )
         ) : activeView === 'enrolled' ? (
           <EnrolledBatchesView
             batches={[...pwBatches, ...ntBatches]}
             onSelectBatch={handleSelectBatch}
-            onBrowseBatches={() => setActiveView('batches')}
+            onBrowseBatches={() => {
+              setActiveView('batches');
+              navigate({ view: null, batchId: null }, { push: true });
+            }}
           />
         ) : (
           <BatchExplorer
@@ -223,7 +328,7 @@ function AppContent() {
         <VideoPlayerModal
           item={playingVideoItem}
           courseId={selectedBatch?.id}
-          onClose={() => setPlayingVideoItem(null)}
+          onClose={handleCloseVideo}
         />
       )}
 
@@ -231,14 +336,14 @@ function AppContent() {
         <PdfViewerModal
           item={viewingPdfItem}
           courseId={selectedBatch?.id}
-          onClose={() => setViewingPdfItem(null)}
+          onClose={handleClosePdf}
         />
       )}
 
       {activeTestItem && (
         <TestModal
           item={activeTestItem}
-          onClose={() => setActiveTestItem(null)}
+          onClose={handleCloseTest}
         />
       )}
 
@@ -246,7 +351,7 @@ function AppContent() {
       <PwAuthModal
         isOpen={showPwAuthModal}
         onClose={() => setShowPwAuthModal(false)}
-        onSuccess={(user) => {
+        onSuccess={() => {
           setShowPwAuthModal(false);
           loadPwBatches(1, '', false);
         }}
@@ -298,7 +403,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <MainApp />
+        <RouterProvider>
+          <MainApp />
+        </RouterProvider>
       </AuthProvider>
     </ThemeProvider>
   );

@@ -28,6 +28,7 @@ import {
   getPwTeacherName
 } from '../services/pwApi';
 import { useCourse } from '../context/CourseContext';
+import { useRouter } from '../context/RouterContext';
 
 export default function PwBatchBrowser({ 
   batch, 
@@ -36,6 +37,7 @@ export default function PwBatchBrowser({
   onViewPdf 
 }) {
   const { isLectureCompleted, toggleLectureComplete, toggleBookmark, isBookmarked, isEnrolled, toggleEnroll } = useCourse();
+  const { route, navigate } = useRouter();
 
   const [loadingBatch, setLoadingBatch] = useState(true);
   const [batchDetails, setBatchDetails] = useState(null);
@@ -46,7 +48,7 @@ export default function PwBatchBrowser({
   const [selectedChapter, setSelectedChapter] = useState(null);
 
   // Content tabs: 'videos' | 'notes' | 'dppNotes' | 'dppVideos' | 'schedule'
-  const [activeTab, setActiveTab] = useState('videos');
+  const [activeTab, setActiveTab] = useState(route.tab || 'videos');
   const [loadingContent, setLoadingContent] = useState(false);
   const [contentItems, setContentItems] = useState([]);
 
@@ -60,6 +62,26 @@ export default function PwBatchBrowser({
 
   const enrolled = isEnrolled(batch?.id);
 
+  // Schedule loader declared first
+  const loadBatchSchedule = React.useCallback(async () => {
+    setLoadingSchedule(true);
+    try {
+      const schedule = await fetchPwSchedule(batch.id);
+      setScheduleItems(Array.isArray(schedule) ? schedule : []);
+    } catch (err) {
+      console.warn('Failed to fetch schedule:', err);
+    } finally {
+      setLoadingSchedule(false);
+    }
+  }, [batch.id]);
+
+  // Sync route.tab
+  useEffect(() => {
+    if (route.tab && route.tab !== activeTab) {
+      setActiveTab(route.tab);
+    }
+  }, [route.tab, activeTab]);
+
   // 1. Fetch live batch details on mount
   useEffect(() => {
     let isCancelled = false;
@@ -71,7 +93,12 @@ export default function PwBatchBrowser({
           setBatchDetails(details || batch);
           const subs = details?.subjects || batch?.subjects || [];
           if (subs.length > 0) {
-            setActiveSubject(subs[0]);
+            let targetSub = subs[0];
+            if (route.subjectId) {
+              const matched = subs.find(s => String(s._id || s.id) === String(route.subjectId));
+              if (matched) targetSub = matched;
+            }
+            setActiveSubject(targetSub);
           }
         }
       } catch (err) {
@@ -83,7 +110,7 @@ export default function PwBatchBrowser({
 
     loadDetails();
     return () => { isCancelled = true; };
-  }, [batch.id]);
+  }, [batch.id, batch, route.subjectId]);
 
   // 2. Fetch live chapters when activeSubject changes
   useEffect(() => {
@@ -96,9 +123,15 @@ export default function PwBatchBrowser({
         const subjectId = activeSubject._id || activeSubject.id;
         const list = await fetchPwSubjectInfo(batch.id, subjectId);
         if (!isCancelled) {
-          setChapters(Array.isArray(list) ? list : []);
-          if (list && list.length > 0) {
-            setSelectedChapter(list[0]);
+          const chList = Array.isArray(list) ? list : [];
+          setChapters(chList);
+          if (chList.length > 0) {
+            let targetCh = chList[0];
+            if (route.chapterId) {
+              const matched = chList.find(c => String(c._id || c.id) === String(route.chapterId));
+              if (matched) targetCh = matched;
+            }
+            setSelectedChapter(targetCh);
           } else {
             setSelectedChapter(null);
           }
@@ -113,57 +146,7 @@ export default function PwBatchBrowser({
 
     loadChapters();
     return () => { isCancelled = true; };
-  }, [batch.id, activeSubject]);
-
-  // 3. Fetch live chapter contents when selectedChapter or activeTab changes
-  useEffect(() => {
-    if (!activeSubject || !selectedChapter) return;
-
-    if (activeTab === 'schedule') {
-      loadBatchSchedule();
-      return;
-    }
-
-    let isCancelled = false;
-    async function loadContents() {
-      setLoadingContent(true);
-      setContentItems([]);
-      try {
-        const subjectId = activeSubject._id || activeSubject.id;
-        const chapterId = selectedChapter._id || selectedChapter.id;
-        
-        let typeParam = 'videos';
-        if (activeTab === 'notes') typeParam = 'notes';
-        if (activeTab === 'dppNotes') typeParam = 'dpp-notes';
-        if (activeTab === 'dppVideos') typeParam = 'dpp-videos';
-
-        const items = await fetchPwTopicContent(batch.id, subjectId, chapterId, typeParam);
-        if (!isCancelled) {
-          setContentItems(Array.isArray(items) ? items : []);
-        }
-      } catch (err) {
-        console.error('Failed to load PW contents:', err);
-        if (!isCancelled) setContentItems([]);
-      } finally {
-        if (!isCancelled) setLoadingContent(false);
-      }
-    }
-
-    loadContents();
-    return () => { isCancelled = true; };
-  }, [batch.id, activeSubject, selectedChapter, activeTab]);
-
-  const loadBatchSchedule = async () => {
-    setLoadingSchedule(true);
-    try {
-      const schedule = await fetchPwSchedule(batch.id);
-      setScheduleItems(Array.isArray(schedule) ? schedule : []);
-    } catch (err) {
-      console.warn('Failed to fetch schedule:', err);
-    } finally {
-      setLoadingSchedule(false);
-    }
-  };
+  }, [batch.id, activeSubject, route.chapterId]);
 
   const handlePlayVideoItem = (video) => {
     const teacherName = video.faculty || video.teacherName || getPwTeacherName(video, activeSubject?.subject || activeSubject?.subjectName || activeSubject?.name);
@@ -212,6 +195,54 @@ export default function PwBatchBrowser({
     onViewPdf(formattedItem);
   };
 
+  // 3. Fetch live chapter contents when selectedChapter or activeTab changes
+  useEffect(() => {
+    if (!activeSubject || !selectedChapter) return;
+
+    if (activeTab === 'schedule') {
+      loadBatchSchedule();
+      return;
+    }
+
+    let isCancelled = false;
+    async function loadContents() {
+      setLoadingContent(true);
+      setContentItems([]);
+      try {
+        const subjectId = activeSubject._id || activeSubject.id;
+        const chapterId = selectedChapter._id || selectedChapter.id;
+        
+        let typeParam = 'videos';
+        if (activeTab === 'notes') typeParam = 'notes';
+        if (activeTab === 'dppNotes') typeParam = 'dpp-notes';
+        if (activeTab === 'dppVideos') typeParam = 'dpp-videos';
+
+        const items = await fetchPwTopicContent(batch.id, subjectId, chapterId, typeParam);
+        if (!isCancelled) {
+          const resolved = Array.isArray(items) ? items : [];
+          setContentItems(resolved);
+
+          // Deep link trigger for PDF or Video
+          if (route.pdfId) {
+            const matchDoc = resolved.find(d => String(d._id || d.id) === String(route.pdfId));
+            if (matchDoc) handleOpenPdfItem(matchDoc);
+          } else if (route.videoId) {
+            const matchVid = resolved.find(v => String(v._id || v.id) === String(route.videoId));
+            if (matchVid) handlePlayVideoItem(matchVid);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load PW contents:', err);
+        if (!isCancelled) setContentItems([]);
+      } finally {
+        if (!isCancelled) setLoadingContent(false);
+      }
+    }
+
+    loadContents();
+    return () => { isCancelled = true; };
+  }, [batch.id, activeSubject, selectedChapter, activeTab, loadBatchSchedule]);
+
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return contentItems;
     const q = searchQuery.toLowerCase().trim();
@@ -222,6 +253,22 @@ export default function PwBatchBrowser({
   }, [contentItems, searchQuery]);
 
   const subjectsList = batchDetails?.subjects || batch?.subjects || [];
+
+  const handleSelectSubject = (subj) => {
+    setActiveSubject(subj);
+    navigate({ subjectId: String(subj._id || subj.id), chapterId: null }, { push: true });
+  };
+
+  const handleSelectChapter = (ch) => {
+    setSelectedChapter(ch);
+    setMobileChapterMenuOpen(false);
+    navigate({ chapterId: String(ch._id || ch.id) }, { push: true });
+  };
+
+  const handleSelectTab = (tabKey) => {
+    setActiveTab(tabKey);
+    navigate({ tab: tabKey }, { replace: true });
+  };
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -338,7 +385,7 @@ export default function PwBatchBrowser({
               return (
                 <button
                   key={subjId}
-                  onClick={() => setActiveSubject(subj)}
+                  onClick={() => handleSelectSubject(subj)}
                   className={`px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 shrink-0 border btn-press ${
                     isSelected
                       ? 'bg-[#457B9D] text-[#F1FAEE] border-[#457B9D] shadow-sm'
@@ -390,7 +437,7 @@ export default function PwBatchBrowser({
                 return (
                   <button
                     key={chId || idx}
-                    onClick={() => setSelectedChapter(ch)}
+                    onClick={() => handleSelectChapter(ch)}
                     className={`w-full text-left p-3.5 rounded-2xl transition-all border flex items-center justify-between gap-3 btn-press ${
                       isSelected
                         ? 'bg-[#1D3557] border-[#457B9D] text-[#F1FAEE] shadow-sm font-semibold'
@@ -473,10 +520,7 @@ export default function PwBatchBrowser({
                       <button
                         key={chId || idx}
                         type="button"
-                        onClick={() => {
-                          setSelectedChapter(ch);
-                          setMobileChapterMenuOpen(false);
-                        }}
+                        onClick={() => handleSelectChapter(ch)}
                         className={`w-full text-left p-2.5 rounded-xl text-xs font-medium transition-all flex items-center justify-between gap-2.5 ${
                           isSelected
                             ? 'bg-[#1D3557] border border-[#457B9D] text-[#F1FAEE] font-bold shadow-sm'
@@ -506,7 +550,7 @@ export default function PwBatchBrowser({
             {/* Content Tabs */}
             <div className="flex items-center gap-1.5 bg-[var(--color-bg)] p-1 rounded-xl border border-[var(--color-border)] overflow-x-auto scrollbar-none">
               <button
-                onClick={() => setActiveTab('videos')}
+                onClick={() => handleSelectTab('videos')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all btn-press ${
                   activeTab === 'videos'
                     ? 'bg-[#457B9D] text-[#F1FAEE] shadow-sm'
@@ -518,7 +562,7 @@ export default function PwBatchBrowser({
               </button>
 
               <button
-                onClick={() => setActiveTab('notes')}
+                onClick={() => handleSelectTab('notes')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all btn-press ${
                   activeTab === 'notes'
                     ? 'bg-[#457B9D] text-[#F1FAEE] shadow-sm'
@@ -530,7 +574,7 @@ export default function PwBatchBrowser({
               </button>
 
               <button
-                onClick={() => setActiveTab('dppNotes')}
+                onClick={() => handleSelectTab('dppNotes')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all btn-press ${
                   activeTab === 'dppNotes'
                     ? 'bg-[#457B9D] text-[#F1FAEE] shadow-sm'
@@ -542,7 +586,7 @@ export default function PwBatchBrowser({
               </button>
 
               <button
-                onClick={() => setActiveTab('dppVideos')}
+                onClick={() => handleSelectTab('dppVideos')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all btn-press ${
                   activeTab === 'dppVideos'
                     ? 'bg-[#457B9D] text-[#F1FAEE] shadow-sm'
@@ -554,7 +598,7 @@ export default function PwBatchBrowser({
               </button>
 
               <button
-                onClick={() => setActiveTab('schedule')}
+                onClick={() => handleSelectTab('schedule')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all btn-press ${
                   activeTab === 'schedule'
                     ? 'bg-[#457B9D] text-[#F1FAEE] shadow-sm'

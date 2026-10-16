@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Folder, 
-  Video, 
   FileText, 
   ListCheck, 
   ChevronRight, 
@@ -20,6 +19,7 @@ import {
 } from 'lucide-react';
 import { fetchCourseOverview, fetchFolderContent, getTeacherForContent } from '../services/api';
 import { useCourse } from '../context/CourseContext';
+import { useRouter } from '../context/RouterContext';
 
 export default function FolderBrowser({ 
   batch, 
@@ -29,18 +29,42 @@ export default function FolderBrowser({
   onStartTest 
 }) {
   const { isLectureCompleted, toggleLectureComplete, toggleBookmark, isBookmarked } = useCourse();
+  const { route, navigate } = useRouter();
 
   const [courseDetails, setCourseDetails] = useState(null);
-  const [folderHistory, setFolderHistory] = useState([
-    { id: '0', title: 'Course Content' }
-  ]);
+  const [folderHistory, setFolderHistory] = useState(() => {
+    if (route.folderId && route.folderId !== '0') {
+      return [
+        { id: '0', title: 'Course Content' },
+        { id: route.folderId, title: 'Folder Content' }
+      ];
+    }
+    return [{ id: '0', title: 'Course Content' }];
+  });
   const [contentItems, setContentItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'video', 'pdf', 'test'
+  const [activeTab, setActiveTab] = useState(route.tab || 'all'); // 'all', 'video', 'pdf', 'test'
   const [searchFilter, setSearchFilter] = useState('');
   const [showPlannerModal, setShowPlannerModal] = useState(false);
 
   const currentFolder = folderHistory[folderHistory.length - 1];
+
+  // Sync folderHistory when route.folderId changes via browser Back/Forward
+  useEffect(() => {
+    const rFolderId = route.folderId || '0';
+    if (rFolderId === currentFolder.id) return;
+
+    if (rFolderId === '0') {
+      setFolderHistory([{ id: '0', title: 'Course Content' }]);
+    } else {
+      const existingIdx = folderHistory.findIndex((f) => String(f.id) === String(rFolderId));
+      if (existingIdx !== -1) {
+        setFolderHistory((prev) => prev.slice(0, existingIdx + 1));
+      } else {
+        setFolderHistory((prev) => [...prev, { id: rFolderId, title: 'Folder Content' }]);
+      }
+    }
+  }, [route.folderId, currentFolder.id, folderHistory]);
 
   // Load course overview once
   useEffect(() => {
@@ -63,7 +87,20 @@ export default function FolderBrowser({
       setSearchFilter('');
       try {
         const items = await fetchFolderContent(batch.id, currentFolder.id);
-        setContentItems(items || []);
+        const resolvedItems = items || [];
+        setContentItems(resolvedItems);
+
+        // Conditional deep link open if user navigated directly to a PDF, Video or Test
+        if (route.pdfId) {
+          const matchPdf = resolvedItems.find((it) => String(it.id || it.entity_id) === String(route.pdfId));
+          if (matchPdf) onViewPdf(matchPdf);
+        } else if (route.videoId) {
+          const matchVideo = resolvedItems.find((it) => String(it.id || it.entity_id) === String(route.videoId));
+          if (matchVideo) onPlayVideo(matchVideo);
+        } else if (route.testId) {
+          const matchTest = resolvedItems.find((it) => String(it.id || it.entity_id) === String(route.testId));
+          if (matchTest) onStartTest(matchTest);
+        }
       } catch (err) {
         console.error('Failed to load folder content:', err);
         setContentItems([]);
@@ -78,12 +115,15 @@ export default function FolderBrowser({
     setActiveTab('all');
     setSearchFilter('');
     setFolderHistory((prev) => [...prev, { id: folderId, title: folderTitle }]);
+    navigate({ folderId: String(folderId) }, { push: true });
   };
 
   const navigateToBreadcrumb = (index) => {
     setActiveTab('all');
     setSearchFilter('');
+    const target = folderHistory[index];
     setFolderHistory((prev) => prev.slice(0, index + 1));
+    navigate({ folderId: target?.id === '0' ? null : String(target?.id) }, { push: true });
   };
 
   // Helper to determine if an item or folder matches a specific category tab
@@ -289,7 +329,10 @@ export default function FolderBrowser({
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  navigate({ tab: tab.id === 'all' ? null : tab.id }, { replace: true });
+                }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap btn-press ${
                   activeTab === tab.id
                     ? 'bg-[#457B9D] text-[#F1FAEE] font-bold shadow-sm'

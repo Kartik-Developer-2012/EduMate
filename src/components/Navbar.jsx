@@ -12,7 +12,8 @@ import {
   Lock,
   Sun,
   Moon,
-  Menu
+  Menu,
+  Sparkles
 } from 'lucide-react';
 import { useCourse } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
