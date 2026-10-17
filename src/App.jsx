@@ -93,10 +93,22 @@ function AppContent() {
     }
   }, [masterActive]);
 
-  // Fetch PW batches whenever activeProvider changes to 'pw' or on initial load / auth state change
+  // Live PW batches loading and debounced live search
   useEffect(() => {
-    loadPwBatches(1, searchQuery, false);
-  }, [loadPwBatches, pwUser, masterActive]);
+    // Avoid spamming live search if unauthorized and no master session
+    if (pwUnauthorized && !masterActive && !pwUser) return;
+
+    const timer = setTimeout(() => {
+      loadPwBatches(1, searchQuery, false);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, loadPwBatches, pwUser, masterActive, pwUnauthorized]);
+
+  // Handle immediate search (e.g. Enter pressed in search bar)
+  const handleImmediateSearch = useCallback((query) => {
+    loadPwBatches(1, query, false);
+  }, [loadPwBatches]);
 
   // Handle Load More PW batches
   const handleLoadMorePw = () => {
@@ -274,6 +286,7 @@ function AppContent() {
         onBackToBatches={handleBackToBatches}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        onSearchSubmit={handleImmediateSearch}
         onOpenPwLogin={() => setShowPwAuthModal(true)}
       />
 

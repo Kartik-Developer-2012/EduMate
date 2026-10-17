@@ -7,7 +7,9 @@ import {
   LogIn, 
   ArrowRight, 
   ShieldCheck, 
-  RefreshCw 
+  RefreshCw,
+  Search,
+  X 
 } from 'lucide-react';
 import BatchCard from './BatchCard';
 import { useCourse } from '../context/CourseContext';
@@ -50,42 +52,49 @@ export default function BatchExplorer({
   }, [activeProvider, pwBatches, ntBatches]);
 
   const filteredBatches = useMemo(() => {
+    const q = (searchQuery || '').toLowerCase().trim();
+    const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
+
     return currentBatches.filter((batch) => {
       const titleLower = (batch.title || batch.batchName || '').toLowerCase();
-      const queryLower = searchQuery.toLowerCase().trim();
+      const byNameLower = (batch.byName || '').toLowerCase();
+      const idLower = String(batch.id || batch.batchId || '').toLowerCase();
+      const descLower = (batch.description || '').toLowerCase();
+      const langLower = (batch.language || '').toLowerCase();
 
-      // Category filter matching
-      if (selectedCategory === 'neet' && !titleLower.includes('neet') && !titleLower.includes('yakeen')) {
-        return false;
-      }
-      if (selectedCategory === 'jee' && !titleLower.includes('jee') && !titleLower.includes('prayas')) {
-        return false;
-      }
-      if (selectedCategory === '10th' && !titleLower.includes('10th') && !titleLower.includes('class 10') && !titleLower.includes('udaan')) {
-        return false;
-      }
-      if (selectedCategory === '9th' && !titleLower.includes('9th') && !titleLower.includes('class 9') && !titleLower.includes('neev')) {
-        return false;
-      }
-      if (selectedCategory === '11th' && !titleLower.includes('11th') && !titleLower.includes('class 11') && !titleLower.includes('arjuna')) {
-        return false;
-      }
-      if (selectedCategory === '12th' && !titleLower.includes('12th') && !titleLower.includes('class 12') && !titleLower.includes('lakshya')) {
-        return false;
-      }
-      if (selectedCategory === 'foundation' && !titleLower.includes('7') && !titleLower.includes('8') && !titleLower.includes('nirmaan') && !titleLower.includes('umang')) {
-        return false;
-      }
-      if (selectedCategory === 'entrance' && !titleLower.includes('cuet') && !titleLower.includes('ioqm') && !titleLower.includes('nsejs')) {
-        return false;
+      // Multi-word search matching across all batch attributes
+      if (tokens.length > 0) {
+        const fullSearchable = `${titleLower} ${byNameLower} ${idLower} ${descLower} ${langLower}`;
+        const matchesAll = tokens.every((tok) => fullSearchable.includes(tok));
+        if (!matchesAll) return false;
       }
 
-      // Search matching
-      if (queryLower) {
-        const matchesTitle = titleLower.includes(queryLower);
-        const matchesId = String(batch.id).toLowerCase().includes(queryLower);
-        const matchesTeacher = batch.byName && batch.byName.toLowerCase().includes(queryLower);
-        return matchesTitle || matchesId || matchesTeacher;
+      // Category filter matching (only applies when no global search is active)
+      if (selectedCategory !== 'all' && !q) {
+        if (selectedCategory === 'neet' && !titleLower.includes('neet') && !titleLower.includes('yakeen')) {
+          return false;
+        }
+        if (selectedCategory === 'jee' && !titleLower.includes('jee') && !titleLower.includes('prayas')) {
+          return false;
+        }
+        if (selectedCategory === '10th' && !titleLower.includes('10th') && !titleLower.includes('class 10') && !titleLower.includes('udaan')) {
+          return false;
+        }
+        if (selectedCategory === '9th' && !titleLower.includes('9th') && !titleLower.includes('class 9') && !titleLower.includes('neev')) {
+          return false;
+        }
+        if (selectedCategory === '11th' && !titleLower.includes('11th') && !titleLower.includes('class 11') && !titleLower.includes('arjuna')) {
+          return false;
+        }
+        if (selectedCategory === '12th' && !titleLower.includes('12th') && !titleLower.includes('class 12') && !titleLower.includes('lakshya')) {
+          return false;
+        }
+        if (selectedCategory === 'foundation' && !titleLower.includes('7') && !titleLower.includes('8') && !titleLower.includes('nirmaan') && !titleLower.includes('umang')) {
+          return false;
+        }
+        if (selectedCategory === 'entrance' && !titleLower.includes('cuet') && !titleLower.includes('ioqm') && !titleLower.includes('nsejs')) {
+          return false;
+        }
       }
 
       return true;
@@ -96,9 +105,21 @@ export default function BatchExplorer({
 
   const handleLookupSubmit = (e) => {
     e.preventDefault();
-    if (!directBatchId.trim()) return;
-    if (onDirectBatchLookup) {
-      onDirectBatchLookup(directBatchId.trim());
+    const val = directBatchId.trim();
+    if (!val) return;
+
+    // Check if it's a numeric ID (Next Toppers) or 24-char hex ObjectId (PW)
+    const isNumericId = /^\d+$/.test(val);
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(val);
+
+    if (isNumericId || isMongoId) {
+      if (onDirectBatchLookup) {
+        onDirectBatchLookup(val);
+      }
+    } else {
+      // User typed a name/keyword (e.g. "Yakeen", "Arjuna", "NEET")
+      setSearchQuery(val);
+      setDirectBatchId('');
     }
   };
 
@@ -249,6 +270,28 @@ export default function BatchExplorer({
         </form>
       </div>
 
+      {/* Active Search Results Indicator */}
+      {searchQuery && (
+        <div className="flex items-center justify-between gap-3 mb-5 p-3 sm:p-4 rounded-2xl bg-[var(--color-surface)] border border-[#457B9D]/40 shadow-sm animate-in fade-in duration-150">
+          <div className="flex items-center gap-2 text-xs flex-wrap">
+            <Search className="w-4 h-4 text-[#A8DADC]" />
+            <span className="text-[var(--color-text-secondary)]">Showing live results for:</span>
+            <span className="font-bold text-[#F1FAEE]">"{searchQuery}"</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1D3557] text-[#A8DADC] border border-[#457B9D]/40 font-semibold">
+              {filteredBatches.length} {filteredBatches.length === 1 ? 'batch' : 'batches'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            className="text-xs text-[#A8DADC] hover:text-[#F1FAEE] font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--color-surface-hover)] border border-[var(--color-border)] hover:border-[#457B9D] transition-colors btn-press shrink-0"
+          >
+            <X className="w-3.5 h-3.5" />
+            <span>Clear Search</span>
+          </button>
+        </div>
+      )}
+
       {/* Category Filter Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 scrollbar-none">
         {CATEGORIES.map((cat) => (
@@ -278,15 +321,26 @@ export default function BatchExplorer({
             <Layers className="w-7 h-7 text-[#A8DADC]" />
           </div>
           <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-1">
-            {searchQuery ? 'No batches matched your search' : 'No batches found'}
+            {searchQuery ? `No batches found for "${searchQuery}"` : 'No batches found'}
           </h3>
           <p className="text-xs text-[var(--color-text-secondary)] max-w-md mx-auto mb-5 leading-relaxed">
-            {activeProvider === 'pw' && !pwUser
-              ? 'Please login with your Physics Wallah registered phone number to view all your enrolled and available batches.'
-              : 'Try selecting a different category or entering a specific batch ID above.'}
+            {searchQuery 
+              ? 'Try checking for typos, searching for another keyword (e.g. Yakeen, Arjuna, Lakshya), or clearing the search.'
+              : (activeProvider === 'pw' && !pwUser && !masterActive
+                ? 'Please login with your Physics Wallah registered phone number to view all your enrolled and available batches.'
+                : 'Try selecting a different category or entering a specific batch ID above.')}
           </p>
 
-          {activeProvider === 'pw' && !pwUser && (
+          {searchQuery ? (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="px-5 py-2.5 rounded-xl bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] font-bold text-xs inline-flex items-center gap-2 transition-all shadow-sm btn-press"
+            >
+              <X className="w-4 h-4" />
+              <span>Clear Search</span>
+            </button>
+          ) : activeProvider === 'pw' && !pwUser && !masterActive ? (
             <button
               onClick={onOpenPwLogin}
               className="px-5 py-2.5 rounded-xl bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] font-bold text-xs inline-flex items-center gap-2 transition-all shadow-sm btn-press"
@@ -294,7 +348,7 @@ export default function BatchExplorer({
               <LogIn className="w-4 h-4" />
               <span>Login with Phone Number</span>
             </button>
-          )}
+          ) : null}
         </div>
       ) : (
         <>

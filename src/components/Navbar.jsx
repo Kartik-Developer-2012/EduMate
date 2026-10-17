@@ -27,6 +27,7 @@ export default function Navbar({
   onBackToBatches,
   searchQuery, 
   setSearchQuery,
+  onSearchSubmit,
   onOpenPwLogin 
 }) {
   const { enrolledBatches, pwUser, logoutPwUser, masterActive } = useCourse();
@@ -84,7 +85,13 @@ export default function Navbar({
         {/* Center: Search Bar (Desktop) */}
         {!selectedBatch && (
           <div className="hidden md:flex flex-1 max-w-md mx-4 lg:mx-6">
-            <div className="relative w-full">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                onSearchSubmit?.(searchQuery);
+              }}
+              className="relative w-full"
+            >
               <Search className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input 
                 type="text"
@@ -95,13 +102,19 @@ export default function Navbar({
               />
               {searchQuery && (
                 <button 
-                  onClick={() => setSearchQuery('')}
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    onSearchSubmit?.('');
+                  }}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] p-0.5 rounded-full"
+                  title="Clear Search"
+                  aria-label="Clear Search"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
-            </div>
+            </form>
           </div>
         )}
 
@@ -255,7 +268,13 @@ export default function Navbar({
       {/* Mobile Search Row (Dropdown when active) */}
       {!selectedBatch && isMobileSearchOpen && (
         <div className="md:hidden px-4 py-2.5 bg-[var(--color-surface)] border-t border-[var(--color-border)] animate-in fade-in duration-150">
-          <div className="relative w-full">
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              onSearchSubmit?.(searchQuery);
+            }}
+            className="relative w-full"
+          >
             <Search className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input 
               type="text"
@@ -267,13 +286,19 @@ export default function Navbar({
             />
             {searchQuery && (
               <button 
-                onClick={() => setSearchQuery('')}
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  onSearchSubmit?.('');
+                }}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] p-0.5 rounded-full"
+                title="Clear Search"
+                aria-label="Clear Search"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
-          </div>
+          </form>
         </div>
       )}
 
