@@ -366,6 +366,37 @@ function mediaStreamPlugin() {
           updatedAt: master?.updatedAt || null
         }));
       });
+
+      // 5. Google OAuth token exchange proxy (prevents browser CORS errors)
+      server.middlewares.use('/api/google-oauth/token', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end('Method Not Allowed');
+          return;
+        }
+
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', async () => {
+          try {
+            const googleRes = await fetch('https://oauth2.googleapis.com/token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: body
+            });
+            const text = await googleRes.text();
+            res.statusCode = googleRes.status;
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.end(text);
+          } catch (err) {
+            console.error('Google OAuth proxy error:', err);
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+      });
     },
   };
 }

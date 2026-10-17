@@ -14,6 +14,8 @@ import { CourseProvider, useCourse } from './context/CourseContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { RouterProvider, useRouter } from './context/RouterContext';
+import { GoogleTasksProvider } from './context/GoogleTasksContext';
+import { ProductivityHub, FloatingStudyAssistant } from './components/Productivity';
 import AuthGate from './components/AuthGate';
 import { ShieldCheck, Sparkles } from 'lucide-react';
 
@@ -318,6 +320,14 @@ function AppContent() {
               navigate({ view: null, batchId: null }, { push: true });
             }}
           />
+        ) : activeView === 'productivity' || activeView === 'tasks' || activeView === 'timer' || activeView === 'streaks' ? (
+          <ProductivityHub
+            initialTab={activeView === 'productivity' ? 'overview' : activeView}
+            onBackToBatches={() => {
+              setActiveView('batches');
+              navigate({ view: null, batchId: null }, { push: true });
+            }}
+          />
         ) : (
           <BatchExplorer
             ntBatches={ntBatches}
@@ -394,6 +404,14 @@ function AppContent() {
           </div>
         </div>
       </footer>
+      {/* Floating Study Assistant Widget */}
+      <FloatingStudyAssistant
+        onOpenFullHub={() => {
+          setActiveView('productivity');
+          setSelectedBatch(null);
+          navigate({ view: 'productivity', batchId: null }, { push: true });
+        }}
+      />
     </div>
   );
 }
@@ -417,7 +435,9 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <RouterProvider>
-          <MainApp />
+          <GoogleTasksProvider>
+            <MainApp />
+          </GoogleTasksProvider>
         </RouterProvider>
       </AuthProvider>
     </ThemeProvider>

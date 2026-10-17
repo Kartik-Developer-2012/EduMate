@@ -30,17 +30,42 @@ class GoogleTasksService {
     this.taskLists = [];
   }
 
+  getRedirectUri() {
+    if (typeof window === 'undefined') return '';
+    return import.meta.env.VITE_GOOGLE_REDIRECT_URI || `${window.location.origin}/auth/google/callback`;
+  }
+
   /**
    * Initiate Google OAuth 2.0 Login Flow
    */
-  initiateLogin() {
+  initiateLogin(usePopup = true) {
+    const redirectUri = this.getRedirectUri();
+    try {
+      sessionStorage.setItem('google_oauth_redirect_uri', redirectUri);
+    } catch {}
+
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     authUrl.searchParams.append('client_id', GOOGLE_CLIENT_ID);
-    authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
+    authUrl.searchParams.append('redirect_uri', redirectUri);
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('scope', SCOPES.join(' '));
     authUrl.searchParams.append('access_type', 'offline');
     authUrl.searchParams.append('prompt', 'consent');
+
+    if (usePopup && typeof window !== 'undefined') {
+      const width = 520;
+      const height = 650;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2.5;
+
+      const popup = window.open(
+        authUrl.toString(),
+        'google_oauth_popup',
+        `width=${width},height=${height},left=${left},top=${top},status=no,menubar=no,toolbar=no`
+      );
+
+      if (popup) return popup;
+    }
 
     window.location.href = authUrl.toString();
   }
@@ -50,18 +75,34 @@ class GoogleTasksService {
    * Called after OAuth callback
    */
   async exchangeCodeForToken(code) {
+    let redirectUri = this.getRedirectUri();
     try {
-      const response = await fetch('https://oauth2.googleapis.com/token', {
+      const stored = sessionStorage.getItem('google_oauth_redirect_uri');
+      if (stored) redirectUri = stored;
+    } catch {}
+
+    try {
+      const bodyParams = new URLSearchParams({
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        code,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }).toString();
+
+      let response = await fetch('/api/google-oauth/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          client_id: GOOGLE_CLIENT_ID,
-          client_secret: GOOGLE_CLIENT_SECRET,
-          code,
-          redirect_uri: REDIRECT_URI,
-          grant_type: 'authorization_code',
-        }).toString(),
-      });
+        body: bodyParams,
+      }).catch(() => null);
+
+      if (!response || !response.ok) {
+        response = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: bodyParams,
+        });
+      }
 
       const data = await response.json();
 
@@ -69,6 +110,7 @@ class GoogleTasksService {
         this.setTokens(data.access_token, data.refresh_token, data.expires_in);
         return true;
       }
+      console.warn('OAuth token exchange returned no access token:', data);
       return false;
     } catch (error) {
       console.error('Token exchange failed:', error);
@@ -86,16 +128,26 @@ class GoogleTasksService {
     }
 
     try {
-      const response = await fetch('https://oauth2.googleapis.com/token', {
+      const bodyParams = new URLSearchParams({
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        refresh_token: this.refreshToken,
+        grant_type: 'refresh_token',
+      }).toString();
+
+      let response = await fetch('/api/google-oauth/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          client_id: GOOGLE_CLIENT_ID,
-          client_secret: GOOGLE_CLIENT_SECRET,
-          refresh_token: this.refreshToken,
-          grant_type: 'refresh_token',
-        }).toString(),
-      });
+        body: bodyParams,
+      }).catch(() => null);
+
+      if (!response || !response.ok) {
+        response = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: bodyParams,
+        });
+      }
 
       const data = await response.json();
 

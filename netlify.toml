@@ -4,6 +4,12 @@
   functions = "netlify/functions"
 
 [[redirects]]
+  from = "/api/google-oauth/token"
+  to = "/.netlify/functions/google-oauth"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/resolve-media"
   to = "/.netlify/functions/resolve-media"
   status = 200
