@@ -1,17 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  Loader2, 
-  Layers, 
-  BookOpen, 
-  Sparkles, 
-  LogIn, 
-  ArrowRight, 
-  ShieldCheck, 
+import {
+  Loader2,
+  Layers,
+  BookOpen,
+  Sparkles,
+  LogIn,
+  ArrowRight,
+  ShieldCheck,
   RefreshCw,
   Search,
-  X 
+  X
 } from 'lucide-react';
 import BatchCard from './BatchCard';
+import { SkeletonLoader } from './ui';
 import { useCourse } from '../context/CourseContext';
 
 const CATEGORIES = [
@@ -311,10 +312,7 @@ export default function BatchExplorer({
 
       {/* Batches Grid */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-[var(--color-text-secondary)]">
-          <Loader2 className="w-8 h-8 animate-spin mb-3 text-[#A8DADC]" />
-          <p className="text-xs font-semibold">Fetching live batches from {activeProvider === 'pw' ? 'Physics Wallah' : 'catalog'}...</p>
-        </div>
+        <SkeletonLoader variant="batch-grid" count={4} />
       ) : filteredBatches.length === 0 ? (
         <div className="text-center py-20 card-surface rounded-3xl p-8">
           <div className="w-14 h-14 rounded-2xl bg-[#1D3557] border border-[#457B9D]/40 flex items-center justify-center mx-auto mb-4">

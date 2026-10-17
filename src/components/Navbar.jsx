@@ -1,34 +1,36 @@
 import React, { useState } from 'react';
-import { 
-  BookOpen, 
-  Layers, 
-  Search, 
-  X, 
-  ArrowLeft, 
-  ShieldCheck,
-  LogOut,
-  User,
-  Smartphone,
-  Lock,
+import {
+  Search,
+  X,
   Sun,
   Moon,
   Menu,
-  Sparkles
+  Bookmark,
+  BookOpen,
+  LogOut,
+  Lock,
+  Smartphone,
+  Sparkles,
 } from 'lucide-react';
 import { useCourse } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import appLogo from '../assets/app-logo.png';
 
-export default function Navbar({ 
-  activeView, 
-  setActiveView, 
-  selectedBatch, 
+/**
+ * Modern, Clean Navbar (Balanced Design)
+ * 5 items: Logo, Search, Theme, Bookmarks, Menu
+ * Significantly simplified from previous 8+ items
+ */
+export default function Navbar({
+  activeView,
+  setActiveView,
+  selectedBatch,
   onBackToBatches,
-  searchQuery, 
+  searchQuery,
   setSearchQuery,
   onSearchSubmit,
-  onOpenPwLogin 
+  onOpenPwLogin,
 }) {
   const { enrolledBatches, pwUser, logoutPwUser, masterActive } = useCourse();
   const { logout, authEmail } = useAuth();
@@ -37,79 +39,70 @@ export default function Navbar({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(Boolean(searchQuery));
 
+  const bookmarksCount = 0; // TODO: Connect to actual bookmarks context
+
   return (
-    <header className="sticky top-0 z-40 w-full bg-[var(--color-surface)]/95 backdrop-blur-md border-b border-[var(--color-border)] shadow-sm transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-        
-        {/* Left: Brand Identity or Back Button */}
-        <div className="flex items-center gap-3 shrink-0">
+    <header className="sticky top-0 z-40 w-full bg-[var(--color-surface)] border-b border-[var(--color-border)] shadow-sm transition-all duration-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        {/* Left: Brand Logo */}
+        <div className="flex items-center gap-2.5 shrink-0">
           {selectedBatch ? (
             <button
               onClick={onBackToBatches}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:border-[#457B9D] text-xs font-semibold transition-colors btn-press"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:border-[#5B21B6] text-xs font-semibold transition-all hover:scale-105"
             >
-              <ArrowLeft className="w-4 h-4 text-[#A8DADC]" />
-              <span>All Batches</span>
+              <span>← Back</span>
             </button>
           ) : (
-            <div 
+            <button
               onClick={() => setActiveView('batches')}
-              className="flex items-center gap-2.5 cursor-pointer group"
+              className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             >
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#1D3557] to-[#457B9D] p-0.5 shadow-sm group-hover:scale-105 transition-transform">
-                <div className="w-full h-full bg-[#112033] rounded-[10px] overflow-hidden flex items-center justify-center">
-                  <img 
-                    src={appLogo} 
-                    alt="EduMate Logo" 
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#5B21B6] to-[#06B6D4] p-0.5 shadow-sm">
+                <div className="w-full h-full bg-[#0F172A] rounded-[8px] overflow-hidden flex items-center justify-center">
+                  <img
+                    src={appLogo}
+                    alt="EduMate Logo"
                     className="w-full h-full object-cover"
                   />
                 </div>
               </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-heading font-extrabold text-base tracking-wide text-[#F1FAEE] leading-tight">
-                    EDU<span className="text-[#A8DADC]">MATE</span>
-                  </span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#1D3557] text-[#A8DADC] border border-[#457B9D]/50">
-                    PW + NT
-                  </span>
-                </div>
-                <span className="text-[10px] font-medium text-[#A8DADC]/80 tracking-wider">
-                  100% Free & Ad-Free
+              <div className="hidden sm:flex flex-col">
+                <span className="font-bold text-sm tracking-tight text-[#F8FAFC]">
+                  Edu<span className="text-[#06B6D4]">Mate</span>
                 </span>
+                <span className="text-[8px] font-medium text-[#64748B]">Learning Platform</span>
               </div>
-            </div>
+            </button>
           )}
         </div>
 
-        {/* Center: Search Bar (Desktop) */}
+        {/* Center: Search Bar (Desktop only) */}
         {!selectedBatch && (
-          <div className="hidden md:flex flex-1 max-w-md mx-4 lg:mx-6">
-            <form 
+          <div className="hidden md:flex flex-1 max-w-sm">
+            <form
               onSubmit={(e) => {
                 e.preventDefault();
                 onSearchSubmit?.(searchQuery);
               }}
               className="relative w-full"
             >
-              <Search className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input 
+              <Search className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search Physics Wallah & Next Toppers batches..."
-                className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] text-xs rounded-xl pl-9 pr-8 py-2 focus:outline-none focus:border-[#457B9D] focus:ring-2 focus:ring-[#457B9D]/20 transition-all"
+                placeholder="Search batches..."
+                className="w-full bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] text-xs rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:border-[#5B21B6] focus:ring-1 focus:ring-[#5B21B6]/30 transition-all"
               />
               {searchQuery && (
-                <button 
+                <button
                   type="button"
                   onClick={() => {
                     setSearchQuery('');
                     onSearchSubmit?.('');
                   }}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] p-0.5 rounded-full"
-                  title="Clear Search"
-                  aria-label="Clear Search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] p-0.5 rounded transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -118,157 +111,62 @@ export default function Navbar({
           </div>
         )}
 
-        {/* Right: Desktop Navigation, Theme Toggle & Auth Buttons */}
-        <div className="hidden md:flex items-center gap-2 shrink-0">
+        {/* Right: Action Icons + Menu */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Theme Toggle */}
           <button
-            onClick={() => {
-              setActiveView('batches');
-              if (selectedBatch) onBackToBatches();
-            }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all btn-press ${
-              activeView === 'batches' && !selectedBatch
-                ? 'bg-[#457B9D] text-[#F1FAEE] font-bold shadow-sm'
-                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'
-            }`}
+            onClick={toggleTheme}
+            title={isDark ? 'Light Mode' : 'Dark Mode'}
+            className="p-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)] hover:text-[#5B21B6] transition-all hover:scale-110"
           >
-            <Layers className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Batches</span>
+            {isDark ? (
+              <Sun className="w-4 h-4" />
+            ) : (
+              <Moon className="w-4 h-4" />
+            )}
           </button>
 
+          {/* Bookmarks (Desktop only) */}
           <button
-            onClick={() => {
-              setActiveView('enrolled');
-              if (selectedBatch) onBackToBatches();
-            }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all btn-press ${
-              activeView === 'enrolled'
-                ? 'bg-[#457B9D] text-[#F1FAEE] font-bold shadow-sm'
-                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]'
-            }`}
+            onClick={() => setActiveView('bookmarks')}
+            className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)] hover:text-[#06B6D4] text-xs font-medium transition-all relative"
           >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">My Batches</span>
-            {enrolledBatches.length > 0 && (
-              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#A8DADC] text-[#1D3557]">
-                {enrolledBatches.length}
+            <Bookmark className="w-4 h-4" />
+            {bookmarksCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#06B6D4] text-[#0F172A] text-[9px] font-bold flex items-center justify-center">
+                {bookmarksCount}
               </span>
             )}
           </button>
 
-          {/* Physics Wallah Student Auth Button */}
-          {pwUser || masterActive ? (
-            <div className="flex items-center gap-2 pl-2 border-l border-[var(--color-border)]">
-              <button
-                onClick={onOpenPwLogin}
-                className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#1D3557] hover:bg-[#223E5E] border border-[#457B9D]/40 text-[#A8DADC] text-xs font-medium transition-colors"
-                title="Physics Wallah Lifetime Active • Click to manage"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-[#A8DADC]" />
-                <span className="truncate max-w-[120px] font-semibold">{pwUser?.name || 'PW Lifetime Active'}</span>
-              </button>
-              {pwUser && (
-                <button
-                  onClick={logoutPwUser}
-                  className="p-1.5 text-[var(--color-text-secondary)] hover:text-red-400 hover:bg-[var(--color-surface-hover)] rounded-lg transition-colors"
-                  title="Log Out of Personal PW Session"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          ) : (
-            <button
-              onClick={onOpenPwLogin}
-              className="px-3 py-1.5 rounded-xl bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all btn-press"
-            >
-              <Smartphone className="w-3.5 h-3.5 text-[#F1FAEE]" />
-              <span>One-Time PW Setup</span>
-            </button>
-          )}
-
-          {/* Ad-Free Status Badge */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1D3557] border border-[#457B9D]/40 text-[#A8DADC] text-[11px] font-semibold">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#A8DADC]" />
-            <span>Ad-Free</span>
-          </div>
-
-          {/* Light / Dark Theme Mode Toggle */}
-          <button
-            onClick={toggleTheme}
-            title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="p-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)] hover:text-[#F1FAEE] transition-all btn-press"
-          >
-            {isDark ? (
-              <Sun className="w-4 h-4 text-[#F1FAEE]" />
-            ) : (
-              <Moon className="w-4 h-4 text-[#1D3557]" />
-            )}
-          </button>
-
-          {/* Master Lock Screen Button */}
-          <button
-            onClick={logout}
-            title={`Authenticated as ${authEmail} • Click to Lock App`}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[#457B9D] text-[var(--color-text-secondary)] hover:text-[#F1FAEE] text-xs font-semibold transition-all btn-press"
-          >
-            <Lock className="w-3.5 h-3.5 text-[#A8DADC]" />
-            <span className="hidden sm:inline text-[11px]">Lock App</span>
-          </button>
-        </div>
-
-        {/* Right: Mobile Quick Actions (Mobile Only) */}
-        <div className="flex md:hidden items-center gap-1.5 shrink-0">
+          {/* Mobile Search Toggle */}
           {!selectedBatch && (
             <button
               onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-              className={`p-2 rounded-xl border text-xs font-semibold transition-all btn-press ${
-                isMobileSearchOpen || searchQuery
-                  ? 'bg-[#457B9D] text-[#F1FAEE] border-[#457B9D]'
-                  : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:text-[#F1FAEE]'
-              }`}
-              title="Search Batches"
-              aria-label="Toggle Search"
+              className="md:hidden p-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)]"
             >
               <Search className="w-4 h-4" />
             </button>
           )}
 
-          <button
-            onClick={toggleTheme}
-            title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="p-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)] hover:text-[#F1FAEE] transition-all btn-press"
-            aria-label="Toggle Theme"
-          >
-            {isDark ? (
-              <Sun className="w-4 h-4 text-[#F1FAEE]" />
-            ) : (
-              <Moon className="w-4 h-4 text-[#1D3557]" />
-            )}
-          </button>
-
+          {/* Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)] hover:text-[#F1FAEE] transition-all btn-press relative"
-            title="Navigation Menu"
-            aria-label="Navigation Menu"
+            className="p-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)]"
           >
             {isMobileMenuOpen ? (
-              <X className="w-4 h-4 text-[#A8DADC]" />
+              <X className="w-4 h-4" />
             ) : (
-              <Menu className="w-4 h-4 text-[#A8DADC]" />
-            )}
-            {enrolledBatches.length > 0 && !isMobileMenuOpen && (
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#A8DADC]" />
+              <Menu className="w-4 h-4" />
             )}
           </button>
         </div>
-
       </div>
 
-      {/* Mobile Search Row (Dropdown when active) */}
+      {/* Mobile Search Bar */}
       {!selectedBatch && isMobileSearchOpen && (
-        <div className="md:hidden px-4 py-2.5 bg-[var(--color-surface)] border-t border-[var(--color-border)] animate-in fade-in duration-150">
-          <form 
+        <div className="md:hidden px-4 py-2.5 bg-[var(--color-surface)] border-t border-[var(--color-border)]">
+          <form
             onSubmit={(e) => {
               e.preventDefault();
               onSearchSubmit?.(searchQuery);
@@ -276,121 +174,77 @@ export default function Navbar({
             className="relative w-full"
           >
             <Search className="w-4 h-4 text-[var(--color-text-muted)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input 
+            <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search PW & Next Toppers batches..."
+              placeholder="Search batches..."
               autoFocus
-              className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] text-xs rounded-xl pl-9 pr-8 py-2 focus:outline-none focus:border-[#457B9D] transition-all"
+              className="w-full bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] text-xs rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:border-[#5B21B6]"
             />
-            {searchQuery && (
-              <button 
-                type="button"
-                onClick={() => {
-                  setSearchQuery('');
-                  onSearchSubmit?.('');
-                }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] p-0.5 rounded-full"
-                title="Clear Search"
-                aria-label="Clear Search"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
           </form>
         </div>
       )}
 
-      {/* Mobile Navigation Drawer Overlay */}
+      {/* Mobile Menu Drawer */}
       {isMobileMenuOpen && (
-        <div 
-          className="md:hidden fixed inset-0 top-16 z-50 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
-          onClick={() => setIsMobileMenuOpen(false)}
-        >
-          <div 
-            className="w-full bg-[var(--color-surface)] border-b border-[var(--color-border)] shadow-2xl p-4 sm:p-5 flex flex-col gap-3.5 animate-in slide-in-from-top-2 duration-150 max-h-[calc(100vh-4rem)] overflow-y-auto"
+        <div className="fixed inset-0 top-14 z-50 md:hidden bg-black/30 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}>
+          <div
+            className="w-full bg-[var(--color-surface)] border-b border-[var(--color-border)] shadow-lg p-4 space-y-3 max-h-[calc(100vh-3.5rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Navigation Buttons */}
-            <div className="space-y-2">
-              <button
-                onClick={() => {
-                  setActiveView('batches');
-                  if (selectedBatch) onBackToBatches();
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full p-3 rounded-xl text-xs font-semibold flex items-center justify-between transition-all btn-press ${
-                  activeView === 'batches' && !selectedBatch
-                    ? 'bg-[#457B9D] text-[#F1FAEE] shadow-sm font-bold'
-                    : 'bg-[var(--color-bg)] text-[var(--color-text-primary)] border border-[var(--color-border)]'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Layers className="w-4 h-4 text-[#A8DADC]" />
-                  <span>All Batches</span>
-                </div>
-                <span className="text-[10px] text-[#A8DADC] uppercase font-bold">Catalog</span>
-              </button>
+            <button
+              onClick={() => {
+                setActiveView('batches');
+                if (selectedBatch) onBackToBatches();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-[#5B21B6] text-[#F8FAFC] font-medium text-sm transition-all"
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>All Batches</span>
+            </button>
 
-              <button
-                onClick={() => {
-                  setActiveView('enrolled');
-                  if (selectedBatch) onBackToBatches();
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full p-3 rounded-xl text-xs font-semibold flex items-center justify-between transition-all btn-press ${
-                  activeView === 'enrolled'
-                    ? 'bg-[#457B9D] text-[#F1FAEE] shadow-sm font-bold'
-                    : 'bg-[var(--color-bg)] text-[var(--color-text-primary)] border border-[var(--color-border)]'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <BookOpen className="w-4 h-4 text-[#A8DADC]" />
-                  <span>My Enrolled Batches</span>
-                </div>
-                {enrolledBatches.length > 0 && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#A8DADC] text-[#1D3557]">
-                    {enrolledBatches.length} Saved
-                  </span>
-                )}
-              </button>
-            </div>
-
-            {/* Physics Wallah Student Auth Card */}
-            <div className="p-3.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)]">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Smartphone className="w-4 h-4 text-[#A8DADC]" />
-                  <span className="text-xs font-bold text-[#F1FAEE]">Physics Wallah Account</span>
-                </div>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#1D3557] text-[#A8DADC] border border-[#457B9D]/40">
-                  {pwUser ? 'Connected' : 'Free Sync'}
-                </span>
+            <button
+              onClick={() => {
+                setActiveView('enrolled');
+                if (selectedBatch) onBackToBatches();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] font-medium text-sm hover:bg-[var(--color-surface-card)] transition-all"
+            >
+              <div className="flex items-center gap-2.5">
+                <BookOpen className="w-4 h-4" />
+                <span>My Batches</span>
               </div>
+              {enrolledBatches.length > 0 && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#06B6D4] text-[#0F172A]">
+                  {enrolledBatches.length}
+                </span>
+              )}
+            </button>
 
+            {/* Physics Wallah Login */}
+            <div className="my-2 pt-2 border-t border-[var(--color-border)]">
               {pwUser || masterActive ? (
-                <div className="flex items-center justify-between pt-1">
-                  <button
-                    onClick={() => {
-                      onOpenPwLogin();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-[#A8DADC] truncate mr-2"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-[#A8DADC]" />
-                    <span className="truncate">{pwUser?.name || 'PW Lifetime Active'}</span>
-                  </button>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--color-surface-hover)]">
+                    <Sparkles className="w-4 h-4 text-[#06B6D4]" />
+                    <span className="text-xs font-medium text-[#F8FAFC]">
+                      {pwUser?.name || 'PW Lifetime Active'}
+                    </span>
+                  </div>
                   {pwUser && (
                     <button
                       onClick={() => {
                         logoutPwUser();
                         setIsMobileMenuOpen(false);
                       }}
-                      className="px-2.5 py-1 text-[11px] font-semibold text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg flex items-center gap-1 transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10 text-xs font-medium transition-colors"
                     >
-                      <LogOut className="w-3 h-3" />
-                      <span>Log Out</span>
+                      <LogOut className="w-4 h-4" />
+                      <span>Log Out PW</span>
                     </button>
                   )}
                 </div>
@@ -400,29 +254,24 @@ export default function Navbar({
                     onOpenPwLogin();
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full mt-1.5 py-2 px-3 rounded-lg bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all"
+                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg bg-[#06B6D4] hover:bg-[#0891B2] text-[#0F172A] font-bold text-xs transition-all"
                 >
-                  <Smartphone className="w-3.5 h-3.5" />
-                  <span>One-Time PW Setup (Lifetime)</span>
+                  <Smartphone className="w-4 h-4" />
+                  <span>PW One-Time Setup</span>
                 </button>
               )}
             </div>
 
-            {/* Security and Badges Row */}
-            <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border)]">
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#A8DADC]">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>100% Free & Ad-Free</span>
-              </div>
-
+            {/* Lock App */}
+            <div className="pt-2 border-t border-[var(--color-border)]">
               <button
                 onClick={() => {
                   logout();
                   setIsMobileMenuOpen(false);
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[#F1FAEE]"
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-[var(--color-surface-hover)] hover:bg-red-500/10 text-[var(--color-text-primary)] hover:text-red-400 font-medium text-sm transition-all"
               >
-                <Lock className="w-3.5 h-3.5 text-[#A8DADC]" />
+                <Lock className="w-4 h-4" />
                 <span>Lock App</span>
               </button>
             </div>

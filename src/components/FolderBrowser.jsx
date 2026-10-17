@@ -1,25 +1,26 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Folder, 
-  FileText, 
-  ListCheck, 
-  ChevronRight, 
-  Home, 
-  Loader2, 
-  Play, 
-  Clock, 
-  ArrowLeft, 
-  CheckCircle2, 
-  Bookmark, 
-  User, 
-  Calendar, 
-  Search, 
-  X, 
-  CalendarCheck 
+import {
+  Folder,
+  FileText,
+  ListCheck,
+  ChevronRight,
+  Home,
+  Loader2,
+  Play,
+  Clock,
+  ArrowLeft,
+  CheckCircle2,
+  Bookmark,
+  User,
+  Calendar,
+  Search,
+  X,
+  CalendarCheck
 } from 'lucide-react';
 import { fetchCourseOverview, fetchFolderContent, getTeacherForContent } from '../services/api';
 import { useCourse } from '../context/CourseContext';
 import { useRouter } from '../context/RouterContext';
+import { SkeletonLoader } from './ui';
 
 export default function FolderBrowser({ 
   batch, 
@@ -375,10 +376,7 @@ export default function FolderBrowser({
 
       {/* Cards Grid */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-24 text-[var(--color-text-secondary)]">
-          <Loader2 className="w-8 h-8 animate-spin text-[#A8DADC] mb-2" />
-          <p className="text-xs font-medium">Loading lecture cards...</p>
-        </div>
+        <SkeletonLoader variant="content-grid" count={3} />
       ) : filteredItems.length === 0 ? (
         <div className="text-center py-16 card-surface rounded-2xl">
           <div className="w-12 h-12 rounded-xl bg-[#1D3557] border border-[#457B9D]/40 flex items-center justify-center mx-auto mb-2 text-[#A8DADC]">

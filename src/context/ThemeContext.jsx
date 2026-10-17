@@ -3,33 +3,28 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  // Dark mode is default as per user preference for rich dark software experience
-  const [themeMode, setThemeMode] = useState(() => {
-    const saved = localStorage.getItem('edumate-theme');
-    return saved === 'light' ? 'light' : 'dark';
-  });
+  // DARK-ONLY MODE: No light mode available
+  // Always force dark theme for maximum focus and productivity
+  const [themeMode] = useState('dark');
 
   useEffect(() => {
     const root = document.documentElement;
-    root.setAttribute('data-theme', themeMode);
-    if (themeMode === 'dark') {
-      root.classList.add('dark');
-      root.classList.remove('light');
-    } else {
-      root.classList.add('light');
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('edumate-theme', themeMode);
-  }, [themeMode]);
+    root.setAttribute('data-theme', 'dark');
+    root.classList.add('dark');
+    root.classList.remove('light');
+    // Clear any saved light mode preference
+    localStorage.setItem('edumate-theme', 'dark');
+  }, []);
 
+  // Theme toggle is disabled - always dark
   const toggleTheme = () => {
-    setThemeMode((prev) => (prev === 'light' ? 'dark' : 'light'));
+    // No-op: Dark mode is permanent
   };
 
-  const isDark = themeMode === 'dark';
+  const isDark = true;
 
   return (
-    <ThemeContext.Provider value={{ theme: themeMode, isDark, toggleTheme, setThemeMode }}>
+    <ThemeContext.Provider value={{ theme: 'dark', isDark, toggleTheme, setThemeMode: () => {} }}>
       {children}
     </ThemeContext.Provider>
   );

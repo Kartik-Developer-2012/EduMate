@@ -1,104 +1,62 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-honeydew: #F1FAEE;
-  --color-brand-frostedBlue: #A8DADC;
-  --color-brand-cerulean: #457B9D;
-  --color-brand-oxfordNavy: #1D3557;
+  --color-brand-purple: #5B21B6;
+  --color-brand-cyan: #06B6D4;
+  --color-brand-emerald: #10B981;
+  --color-brand-slate: #0F172A;
 
   /* Aliases */
-  --color-brand-darkTeal: #1D3557;
-  --color-brand-seaGreen: #457B9D;
-  --color-brand-celadon: #A8DADC;
-  --color-brand-teaGreen: #A8DADC;
-  --color-brand-vanilla: #F1FAEE;
+  --color-brand-primary: #5B21B6;
+  --color-brand-secondary: #06B6D4;
+  --color-brand-accent: #10B981;
 }
 
 @layer base {
   :root, [data-theme="dark"], .dark {
-    /* Brand Raw Exact Swatches */
-    --brand-honeydew: #F1FAEE;
-    --brand-frosted-blue: #A8DADC;
-    --brand-cerulean: #457B9D;
-    --brand-oxford-navy: #1D3557;
+    /* Brand Modern Palette */
+    --brand-purple: #5B21B6;
+    --brand-cyan: #06B6D4;
+    --brand-emerald: #10B981;
+    --brand-slate: #0F172A;
 
-    /* Semantic Dark Theme (Default Experience) */
-    --color-primary: #457B9D;
-    --color-primary-hover: #386684;
-    --color-primary-active: #2C526A;
-    --color-primary-foreground: #F1FAEE;
+    /* Semantic Dark Theme (Modern & Clean) - ONLY THEME */
+    --color-primary: #5B21B6;
+    --color-primary-hover: #7C3AED;
+    --color-primary-active: #6D28D9;
+    --color-primary-foreground: #F8FAFC;
 
-    --color-secondary: #A8DADC;
-    --color-secondary-hover: #BDEDEF;
-    --color-secondary-active: #92C6C8;
-    --color-secondary-foreground: #1D3557;
+    --color-secondary: #06B6D4;
+    --color-secondary-hover: #22D3EE;
+    --color-secondary-active: #0891B2;
+    --color-secondary-foreground: #0F172A;
 
-    --color-accent: #A8DADC;
-    --color-accent-foreground: #1D3557;
-    --color-accent-hover: #BDEDEF;
+    --color-accent: #10B981;
+    --color-accent-foreground: #F8FAFC;
+    --color-accent-hover: #34D399;
 
-    --color-bg: #0A131F;
-    --color-surface: #112033;
-    --color-surface-hover: #172C46;
-    --color-surface-card: #13253B;
-    --color-surface-elevated: #1D3557;
-    --color-surface-soft: #193452;
-    --color-surface-soft-tint: rgba(29, 53, 87, 0.45);
-    --color-highlight: #1D3557;
-    --color-highlight-tint: rgba(69, 123, 157, 0.18);
+    --color-bg: #0F172A;
+    --color-surface: #1A2840;
+    --color-surface-hover: #253554;
+    --color-surface-card: #1E3A52;
+    --color-surface-elevated: #253554;
+    --color-surface-soft: #1E3A52;
+    --color-surface-soft-tint: rgba(91, 33, 182, 0.15);
+    --color-highlight: #253554;
+    --color-highlight-tint: rgba(6, 182, 212, 0.12);
 
-    --color-text-primary: #F1FAEE;
-    --color-text-secondary: #A8DADC;
-    --color-text-muted: #7693A6;
-    --color-text-inverse: #1D3557;
+    --color-text-primary: #F8FAFC;
+    --color-text-secondary: #06B6D4;
+    --color-text-muted: #64748B;
+    --color-text-inverse: #0F172A;
 
-    --color-border: #223E5E;
-    --color-border-subtle: rgba(168, 218, 220, 0.14);
-    --color-border-hover: #A8DADC;
+    --color-border: #2D4A69;
+    --color-border-subtle: rgba(6, 182, 212, 0.12);
+    --color-border-hover: #06B6D4;
 
-    --shadow-card: 0 4px 14px -2px rgba(5, 11, 19, 0.6);
-    --shadow-card-hover: 0 16px 30px -6px rgba(5, 11, 19, 0.8);
-    --shadow-modal: 0 24px 50px -12px rgba(5, 11, 19, 0.95);
-  }
-
-  [data-theme="light"], .light {
-    /* Semantic Light Theme */
-    --color-primary: #1D3557;
-    --color-primary-hover: #152842;
-    --color-primary-active: #0E1C2E;
-    --color-primary-foreground: #FFFFFF;
-
-    --color-secondary: #457B9D;
-    --color-secondary-hover: #386684;
-    --color-secondary-active: #2C526A;
-    --color-secondary-foreground: #FFFFFF;
-
-    --color-accent: #A8DADC;
-    --color-accent-foreground: #1D3557;
-    --color-accent-hover: #92C6C8;
-
-    --color-bg: #F4F8F7;
-    --color-surface: #FFFFFF;
-    --color-surface-hover: #EBF3F5;
-    --color-surface-card: #FFFFFF;
-    --color-surface-elevated: #FFFFFF;
-    --color-surface-soft: rgba(168, 218, 220, 0.25);
-    --color-surface-soft-tint: #F1FAEE;
-    --color-highlight: #F1FAEE;
-    --color-highlight-tint: #F7FCF5;
-
-    --color-text-primary: #1D3557;
-    --color-text-secondary: #457B9D;
-    --color-text-muted: #6B8798;
-    --color-text-inverse: #FFFFFF;
-
-    --color-border: #D6E4E5;
-    --color-border-subtle: #E8F1F2;
-    --color-border-hover: #457B9D;
-
-    --shadow-card: 0 2px 8px -2px rgba(29, 53, 87, 0.08);
-    --shadow-card-hover: 0 12px 24px -6px rgba(29, 53, 87, 0.15);
-    --shadow-modal: 0 24px 48px -12px rgba(29, 53, 87, 0.25);
+    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --shadow-card-hover: 0 16px 40px rgba(0, 0, 0, 0.4);
+    --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.5);
   }
 
   html, body {

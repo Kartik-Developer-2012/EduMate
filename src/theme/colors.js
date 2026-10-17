@@ -1,60 +1,57 @@
 /**
- * EduMate Brand Color Palette
- * Authoritative single source of truth based on exact HEX swatches:
- * 1. Honeydew:     #F1FAEE
- * 2. Frosted Blue: #A8DADC
- * 3. Cerulean:     #457B9D
- * 4. Oxford Navy:  #1D3557
+ * EduMate Modern Color Palette (2024-2026)
+ * Purple + Cyan Premium Theme
+ * Authoritative single source of truth
  */
 
 export const brandColors = {
-  // Exact Swatches
-  oxfordNavy: '#1D3557',     // Deepest brand foundation, elevated dark surfaces, navigation
-  cerulean: '#457B9D',       // Primary interactive actions, buttons, active highlights
-  frostedBlue: '#A8DADC',    // Secondary brand, accents, progress bars, active badges, icons
-  honeydew: '#F1FAEE',       // Crisp text, high-visibility contrast, headings, warm highlights
+  // Modern Premium Palette
+  purple: '#5B21B6',           // Primary - Modern, premium, friendly
+  cyan: '#06B6D4',              // Secondary - Vibrant, energetic
+  emerald: '#10B981',           // Success/Accent - Growth, motivation
+  slate: '#0F172A',             // Deep background - Clean foundation
 
-  // Backwards-compatible aliases
-  darkTeal: '#1D3557',
-  seaGreen: '#457B9D',
-  celadon: '#A8DADC',
-  teaGreen: '#A8DADC',
-  vanillaCream: '#F1FAEE',
+  // Aliases for compatibility
+  primary: '#5B21B6',
+  secondary: '#06B6D4',
+  accent: '#10B981',
+  darkBg: '#0F172A',
 };
 
 export const neutralColors = {
   // Dark mode surfaces (Primary & Default Experience)
-  darkPage: '#0A131F',              // Deepest midnight navy canvas
-  darkSurface: '#112033',           // Refined dark card surface
-  darkSurfaceHover: '#172C46',      // Card surface hover
-  darkSurfaceCard: '#13253B',       // Elevated panel
-  darkSurfaceElevated: '#1D3557',   // Exact Oxford Navy elevated container
-  darkSurfaceSoft: '#193452',       // Soft supporting surface
-  darkBorder: '#223E5E',            // Subtle navy border
-  darkBorderSubtle: 'rgba(168, 218, 220, 0.14)',
-  darkBorderHover: '#A8DADC',       // Frosted Blue hover border
-  darkTextPrimary: '#F1FAEE',       // Exact Honeydew - crystal-clear contrast
-  darkTextSecondary: '#A8DADC',     // Exact Frosted Blue - soft, readable
-  darkTextMuted: '#7693A6',
+  darkPage: '#0F172A',          // Deepest slate background
+  darkSurface: '#1A2840',       // Card/surface
+  darkSurfaceHover: '#253554',  // Hover state
+  darkSurfaceCard: '#1E3A52',   // Elevated panel
+  darkSurfaceElevated: '#253554', // Elevated container
+  darkSurfaceSoft: '#1E3A52',   // Soft supporting surface
+  darkBorder: '#2D4A69',        // Subtle border
+  darkBorderSubtle: 'rgba(6, 182, 212, 0.12)',
+  darkBorderHover: '#06B6D4',   // Cyan hover border
+  darkTextPrimary: '#F8FAFC',   // Pure white - crystal clear
+  darkTextSecondary: '#06B6D4', // Cyan - readable
+  darkTextMuted: '#64748B',     // Modern gray
 
   // Light mode neutrals
-  offWhite: '#F4F8F7',
+  offWhite: '#F8FAFC',
   white: '#FFFFFF',
-  charcoal: '#1D3557',
-  mutedNeutral: '#457B9D',
-  borderNeutral: '#D6E4E5',
-  borderSubtle: '#E8F1F2',
+  charcoal: '#0F172A',
+  mutedNeutral: '#5B21B6',
+  borderNeutral: '#E2E8F0',
+  borderSubtle: '#F1F5F9',
 };
 
 export const functionalColors = {
-  success: '#2A9D8F',
-  successSurface: 'rgba(42, 157, 143, 0.2)',
-  warning: '#E76F51',
-  warningSurface: 'rgba(231, 111, 81, 0.2)',
-  error: '#E63946',
-  errorSurface: 'rgba(230, 57, 70, 0.2)',
-  info: brandColors.cerulean,
-  infoSurface: 'rgba(69, 123, 157, 0.2)',
+  success: '#10B981',
+  successSurface: 'rgba(16, 185, 129, 0.15)',
+  warning: '#F59E0B',
+  warningSurface: 'rgba(245, 158, 11, 0.15)',
+  error: '#EF4444',
+  errorSurface: 'rgba(239, 68, 68, 0.15)',
+  info: '#06B6D4',
+  infoSurface: 'rgba(6, 182, 212, 0.15)',
 };
 
 export default brandColors;
+

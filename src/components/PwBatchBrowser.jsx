@@ -1,34 +1,35 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  ArrowLeft, 
-  BookOpen, 
-  Calendar, 
-  CheckCircle2, 
-  ChevronRight, 
+import {
+  ArrowLeft,
+  BookOpen,
+  Calendar,
+  CheckCircle2,
+  ChevronRight,
   ChevronDown,
   ChevronUp,
-  FileText, 
-  Layers, 
-  Loader2, 
-  Play, 
-  Sparkles, 
-  User, 
-  Video, 
-  Bookmark, 
-  ShieldCheck, 
+  FileText,
+  Layers,
+  Loader2,
+  Play,
+  Sparkles,
+  User,
+  Video,
+  Bookmark,
+  ShieldCheck,
   CalendarCheck,
   Search
 } from 'lucide-react';
-import { 
-  fetchPwBatchDetails, 
-  fetchPwSubjectInfo, 
-  fetchPwTopicContent, 
-  fetchPwPdf, 
+import {
+  fetchPwBatchDetails,
+  fetchPwSubjectInfo,
+  fetchPwTopicContent,
+  fetchPwPdf,
   fetchPwSchedule,
   getPwTeacherName
 } from '../services/pwApi';
 import { useCourse } from '../context/CourseContext';
 import { useRouter } from '../context/RouterContext';
+import { SkeletonLoader } from './ui';
 
 export default function PwBatchBrowser({ 
   batch, 
@@ -420,10 +421,7 @@ export default function PwBatchBrowser({
 
           <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
             {loadingChapters ? (
-              <div className="flex flex-col items-center justify-center py-16 text-[var(--color-text-secondary)]">
-                <Loader2 className="w-6 h-6 animate-spin text-[#A8DADC] mb-2" />
-                <span className="text-xs">Loading live chapters...</span>
-              </div>
+              <SkeletonLoader variant="chapter-list" count={5} />
             ) : chapters.length === 0 ? (
               <div className="text-center py-12 text-[var(--color-text-muted)] text-xs">
                 No chapters found for this subject.
@@ -651,10 +649,7 @@ export default function PwBatchBrowser({
             {activeTab === 'schedule' ? (
               <div className="flex-1">
                 {loadingSchedule ? (
-                  <div className="flex flex-col items-center justify-center py-24 text-[var(--color-text-secondary)]">
-                    <Loader2 className="w-6 h-6 animate-spin text-[#A8DADC] mb-2" />
-                    <span className="text-xs">Loading live class schedule...</span>
-                  </div>
+                  <SkeletonLoader variant="content-grid" count={3} />
                 ) : scheduleItems.length === 0 ? (
                   <div className="text-center py-20 text-[var(--color-text-muted)] text-xs">
                     <CalendarCheck className="w-10 h-10 mx-auto mb-2 text-[var(--color-text-muted)]" />
