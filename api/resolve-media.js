@@ -1,48 +1,41 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
-import { getAuth, signInAnonymously } from 'firebase/auth';
+const NTS_WORKER = 'https://nts.khatikgaurav38.workers.dev';
+const STUDYBEE_ORIGIN = 'https://nt.studybeepro.site';
 
-let cachedKey = null;
-let cachedKeyExpiresAt = 0;
-let cachedDevId = null;
+// 1. Resolve stream directly via VideoCrypt endpoint
+async function resolveViaVideoCrypt(vdcId) {
+  if (!vdcId || vdcId === 'null') return null;
+  try {
+    const vcUrl = `${STUDYBEE_ORIGIN}/vc/${vdcId}`;
+    const res = await fetch(vcUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*'
+      }
+    });
 
-async function getOrGenerateKey() {
-  if (cachedKey && Date.now() < cachedKeyExpiresAt) {
-    return { keyName: cachedKey, devId: cachedDevId };
+    if (res.ok) {
+      const json = await res.json().catch(() => null);
+      if (json && json.success) {
+        const link = json.data?.data?.link || json.data?.link || json.link || {};
+        const finalUrl = link.file_url || json.file_url || '';
+        if (finalUrl) {
+          const lower = finalUrl.toLowerCase();
+          const isHls = lower.includes('.m3u8');
+          const isPdf = lower.includes('.pdf');
+          return {
+            success: true,
+            url: finalUrl,
+            streamUrl: isPdf ? `/api/stream/pdf?url=${encodeURIComponent(finalUrl)}` : finalUrl,
+            type: isPdf ? 'pdf' : (isHls ? 'hls' : 'mp4'),
+            token: link.token || null
+          };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn(`VideoCrypt resolution failed for ${vdcId}:`, err.message);
   }
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAzxBCRdwK4NIyGwkzBrV9ev_53MJIfsOM",
-    authDomain: "smexgod.firebaseapp.com",
-    projectId: "smexgod",
-    storageBucket: "smexgod.firebasestorage.app",
-    messagingSenderId: "34615632505",
-    appId: "1:34615632505:web:6e7b5c39e847854ded6aa8"
-  };
-
-  const app = initializeApp(firebaseConfig, "mediaResolverApp_" + Date.now());
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-  await signInAnonymously(auth);
-
-  const keyName = 'SB-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-  const devId = 'dev_' + Math.random().toString(36).substr(2, 9);
-  const expiresAt = Date.now() + (48 * 60 * 60 * 1000);
-
-  await setDoc(doc(db, 'valid_keys', keyName), {
-    createdAt: Date.now(),
-    expiresAt: expiresAt,
-    status: 'active',
-    createdBy: 'user_generate',
-    maxDevices: 1,
-    registeredDevices: []
-  });
-
-  cachedKey = keyName;
-  cachedKeyExpiresAt = expiresAt - (60 * 1000);
-  cachedDevId = devId;
-
-  return { keyName, devId };
+  return null;
 }
 
 export default async function handler(req, res) {
@@ -60,41 +53,82 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-    const { courseId, contentId } = body;
+    const { courseId, contentId, vdcId: rawVdcId, vdc_id, folderId, folder_id } = body;
+    const vdcId = rawVdcId || vdc_id;
+    const folder = folderId || folder_id;
 
-    if (!contentId || !courseId) {
-      return res.status(400).json({ success: false, error: 'courseId and contentId are required' });
+    if (!contentId && !vdcId) {
+      return res.status(400).json({ success: false, message: 'contentId or vdcId is required' });
     }
 
-    const { keyName, devId } = await getOrGenerateKey();
-    const foyUrl = `https://nt.studybeepro.site/api/foy?content_id=${contentId}&course_id=${courseId}&key=${keyName}&device_id=${devId}`;
-    const foyRes = await fetch(foyUrl);
-    const foyJson = await foyRes.json();
-
-    const mediaData = foyJson.decryptedData || foyJson.data || {};
-    const finalUrl = foyJson.drm_details?.data?.link?.file_url || mediaData.file_url || '';
-    const lowerUrl = finalUrl.toLowerCase();
-    const isPdf = mediaData.file_type === 1 || lowerUrl.includes('.pdf');
-    const isHls = lowerUrl.includes('.m3u8');
-    const isYouTube = mediaData.video_type === 1 || lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be');
-
-    if (finalUrl) {
-      return res.status(200).json({
-        success: true,
-        url: finalUrl,
-        streamUrl: isPdf ? `/api/stream/pdf?url=${encodeURIComponent(finalUrl)}` : finalUrl,
-        type: isPdf ? 'pdf' : (isHls ? 'hls' : (isYouTube ? 'youtube' : 'mp4')),
-        mediaData,
-        drmToken: foyJson.drm_details?.data?.link?.token || null
-      });
-    } else {
-      return res.status(200).json({
-        success: false,
-        message: foyJson.reason || 'Media stream not found'
-      });
+    // A. If vdcId was provided, resolve immediately
+    if (vdcId) {
+      const vcResult = await resolveViaVideoCrypt(vdcId);
+      if (vcResult) {
+        return res.status(200).json(vcResult);
+      }
     }
+
+    // B. Lookup item in catalog
+    if (courseId && contentId) {
+      try {
+        const endpoints = [
+          folder ? `${NTS_WORKER}/?content=${courseId}&folder=${folder}` : null,
+          `${NTS_WORKER}/?content=${courseId}`
+        ].filter(Boolean);
+
+        for (const ep of endpoints) {
+          try {
+            const catRes = await fetch(ep);
+            if (catRes.ok) {
+              const json = await catRes.json();
+              const items = json.data || [];
+              const match = items.find((it) => 
+                String(it.entity_id) === String(contentId) || 
+                String(it.data?.id) === String(contentId) ||
+                String(it.id) === String(contentId)
+              );
+
+              if (match) {
+                const itemVdc = match.data?.vdc_id || match.vdc_id;
+                if (itemVdc) {
+                  const vcResult = await resolveViaVideoCrypt(itemVdc);
+                  if (vcResult) {
+                    return res.status(200).json(vcResult);
+                  }
+                }
+
+                const directUrl = match.data?.file_url || match.file_url;
+                if (directUrl) {
+                  const lower = directUrl.toLowerCase();
+                  const isPdf = match.data?.file_type === 1 || lower.includes('.pdf');
+                  const isHls = lower.includes('.m3u8');
+                  const isYt = match.data?.video_type === 1 || lower.includes('youtube.com') || lower.includes('youtu.be');
+                  return res.status(200).json({
+                    success: true,
+                    url: directUrl,
+                    streamUrl: isPdf ? `/api/stream/pdf?url=${encodeURIComponent(directUrl)}` : directUrl,
+                    type: isPdf ? 'pdf' : (isHls ? 'hls' : (isYt ? 'youtube' : 'mp4')),
+                    mediaData: match.data || match
+                  });
+                }
+              }
+            }
+          } catch (subErr) {
+            console.warn(`Catalog lookup error on ${ep}:`, subErr.message);
+          }
+        }
+      } catch (catErr) {
+        console.warn('Catalog resolution failed:', catErr.message);
+      }
+    }
+
+    return res.status(200).json({
+      success: false,
+      message: 'Media stream source currently unavailable'
+    });
   } catch (err) {
     console.error('Resolve media error:', err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(200).json({ success: false, message: err.message || 'Resolve media failed' });
   }
 }

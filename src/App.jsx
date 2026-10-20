@@ -194,12 +194,20 @@ function AppContent() {
         const cached = getCachedMediaItem(route.pdfId);
         if (cached) {
           setViewingPdfItem(cached);
+        } else if (route.batchId) {
+          setViewingPdfItem({
+            id: route.pdfId,
+            entity_id: route.pdfId,
+            course_id: route.batchId,
+            title: `Document #${route.pdfId}`,
+            data: { file_type: 1 }
+          });
         }
       }
     } else if (!route.pdfId && viewingPdfItem) {
       setViewingPdfItem(null);
     }
-  }, [route.pdfId, viewingPdfItem, getCachedMediaItem]);
+  }, [route.pdfId, route.batchId, viewingPdfItem, getCachedMediaItem]);
 
   // Sync Video modal with route
   useEffect(() => {
@@ -209,12 +217,19 @@ function AppContent() {
         const cached = getCachedMediaItem(route.videoId);
         if (cached) {
           setPlayingVideoItem(cached);
+        } else if (route.batchId) {
+          setPlayingVideoItem({
+            id: route.videoId,
+            entity_id: route.videoId,
+            course_id: route.batchId,
+            title: `Lecture #${route.videoId}`
+          });
         }
       }
     } else if (!route.videoId && playingVideoItem) {
       setPlayingVideoItem(null);
     }
-  }, [route.videoId, playingVideoItem, getCachedMediaItem]);
+  }, [route.videoId, route.batchId, playingVideoItem, getCachedMediaItem]);
 
   // Sync Test modal with route
   useEffect(() => {

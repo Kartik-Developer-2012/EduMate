@@ -77,49 +77,6 @@ async function saveDevMasterSession(cookieHeader, user) {
   return sessionData;
 }
 
-// In-memory key caching to ensure uninterrupted, ad-free streaming
-let cachedKey = null;
-let cachedKeyExpiresAt = 0;
-let cachedDevId = null;
-
-async function getOrGenerateKey() {
-  if (cachedKey && Date.now() < cachedKeyExpiresAt) {
-    return { keyName: cachedKey, devId: cachedDevId };
-  }
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAzxBCRdwK4NIyGwkzBrV9ev_53MJIfsOM",
-    authDomain: "smexgod.firebaseapp.com",
-    projectId: "smexgod",
-    storageBucket: "smexgod.firebasestorage.app",
-    messagingSenderId: "34615632505",
-    appId: "1:34615632505:web:6e7b5c39e847854ded6aa8"
-  };
-
-  const app = initializeApp(firebaseConfig, "mediaResolverApp_" + Date.now());
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-  await signInAnonymously(auth);
-
-  const keyName = 'SB-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-  const devId = 'dev_' + Math.random().toString(36).substr(2, 9);
-  const expiresAt = Date.now() + (48 * 60 * 60 * 1000);
-
-  await setDoc(doc(db, 'valid_keys', keyName), {
-    createdAt: Date.now(),
-    expiresAt: expiresAt,
-    status: 'active',
-    createdBy: 'user_generate',
-    maxDevices: 1,
-    registeredDevices: []
-  });
-
-  cachedKey = keyName;
-  cachedKeyExpiresAt = expiresAt - (60 * 1000);
-  cachedDevId = devId;
-
-  return { keyName, devId };
-}
 
 // Custom Vite plugin to handle video streaming and PDF embedding seamlessly
 function mediaStreamPlugin() {
@@ -305,51 +262,73 @@ function mediaStreamPlugin() {
         req.on('end', async () => {
           try {
             const body = JSON.parse(bodyRaw || '{}');
-            const { courseId, contentId } = body;
-
-            if (!contentId || !courseId) {
-              res.statusCode = 400;
-              res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify({ success: false, error: 'courseId and contentId are required' }));
-              return;
-            }
-
-            // Auto-acquire active premium session
-            const { keyName, devId } = await getOrGenerateKey();
-            const foyUrl = `https://nt.studybeepro.site/api/foy?content_id=${contentId}&course_id=${courseId}&key=${keyName}&device_id=${devId}`;
-            const foyRes = await fetch(foyUrl);
-            const foyJson = await foyRes.json();
-
-            const mediaData = foyJson.decryptedData || foyJson.data || {};
-            const finalUrl = foyJson.drm_details?.data?.link?.file_url || mediaData.file_url || '';
-            const lowerUrl = finalUrl.toLowerCase();
-            const isPdf = mediaData.file_type === 1 || lowerUrl.includes('.pdf');
-            const isHls = lowerUrl.includes('.m3u8');
-            const isYouTube = mediaData.video_type === 1 || lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be');
+            const { courseId, contentId, vdcId: rawVdcId, vdc_id, folderId, folder_id } = body;
+            const vdcId = rawVdcId || vdc_id;
+            const folder = folderId || folder_id;
 
             res.setHeader('Content-Type', 'application/json');
             res.setHeader('Access-Control-Allow-Origin', '*');
 
-            if (finalUrl) {
-              res.end(JSON.stringify({
-                success: true,
-                url: finalUrl,
-                streamUrl: isPdf ? `/api/stream/pdf?url=${encodeURIComponent(finalUrl)}` : finalUrl,
-                type: isPdf ? 'pdf' : (isHls ? 'hls' : (isYouTube ? 'youtube' : 'mp4')),
-                mediaData,
-                drmToken: foyJson.drm_details?.data?.link?.token || null
-              }));
-            } else {
-              res.end(JSON.stringify({
-                success: false,
-                message: foyJson.reason || 'Media stream not found'
-              }));
+            // A. If vdcId was provided directly
+            if (vdcId) {
+              try {
+                const vcRes = await fetch(`https://nt.studybeepro.site/vc/${vdcId}`);
+                if (vcRes.ok) {
+                  const vcJson = await vcRes.json();
+                  const fileUrl = vcJson.data?.data?.link?.file_url || vcJson.data?.link?.file_url;
+                  if (fileUrl) {
+                    res.end(JSON.stringify({
+                      success: true,
+                      url: fileUrl,
+                      streamUrl: fileUrl,
+                      type: fileUrl.includes('.m3u8') ? 'hls' : 'mp4'
+                    }));
+                    return;
+                  }
+                }
+              } catch (e) {}
             }
+
+            // B. Catalog lookup
+            if (courseId && contentId) {
+              const ep = folder ? `https://nts.khatikgaurav38.workers.dev/?content=${courseId}&folder=${folder}` : `https://nts.khatikgaurav38.workers.dev/?content=${courseId}`;
+              try {
+                const catRes = await fetch(ep);
+                if (catRes.ok) {
+                  const catJson = await catRes.json();
+                  const match = (catJson.data || []).find(it => String(it.entity_id) === String(contentId) || String(it.data?.id) === String(contentId));
+                  if (match) {
+                    const itemVdc = match.data?.vdc_id || match.vdc_id;
+                    if (itemVdc) {
+                      const vcRes = await fetch(`https://nt.studybeepro.site/vc/${itemVdc}`);
+                      if (vcRes.ok) {
+                        const vcJson = await vcRes.json();
+                        const fileUrl = vcJson.data?.data?.link?.file_url || vcJson.data?.link?.file_url;
+                        if (fileUrl) {
+                          res.end(JSON.stringify({
+                            success: true,
+                            url: fileUrl,
+                            streamUrl: fileUrl,
+                            type: fileUrl.includes('.m3u8') ? 'hls' : 'mp4'
+                          }));
+                          return;
+                        }
+                      }
+                    }
+                  }
+                }
+              } catch {}
+            }
+
+            res.end(JSON.stringify({
+              success: false,
+              message: 'Media stream not found'
+            }));
           } catch (err) {
             console.error('Resolve media error:', err);
-            res.statusCode = 500;
+            res.statusCode = 200;
             res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ success: false, error: err.message }));
+            res.end(JSON.stringify({ success: false, message: err.message || 'Resolve media failed' }));
           }
         });
       });
@@ -464,6 +443,11 @@ export default defineConfig({
         target: 'https://nts.khatikgaurav38.workers.dev',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/nts/, ''),
+      },
+      '/api/vc': {
+        target: 'https://nt.studybeepro.site',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/vc/, '/vc'),
       },
       '/api/studybee': {
         target: 'https://nt.studybeepro.site',

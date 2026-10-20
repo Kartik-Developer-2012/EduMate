@@ -40,6 +40,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/vc/*"
+  to = "https://nt.studybeepro.site/vc/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/studybee/*"
   to = "https://nt.studybeepro.site/:splat"
   status = 200

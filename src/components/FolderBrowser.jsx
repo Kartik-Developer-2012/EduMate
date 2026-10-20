@@ -5,7 +5,6 @@ import {
   ListCheck,
   ChevronRight,
   Home,
-  Loader2,
   Play,
   Clock,
   ArrowLeft,
@@ -94,13 +93,13 @@ export default function FolderBrowser({
         // Conditional deep link open if user navigated directly to a PDF, Video or Test
         if (route.pdfId) {
           const matchPdf = resolvedItems.find((it) => String(it.id || it.entity_id) === String(route.pdfId));
-          if (matchPdf) onViewPdf(matchPdf);
+          if (matchPdf) onViewPdf({ ...matchPdf, batchTitle: batch.title, folderHistory, course_id: batch.id });
         } else if (route.videoId) {
           const matchVideo = resolvedItems.find((it) => String(it.id || it.entity_id) === String(route.videoId));
-          if (matchVideo) onPlayVideo(matchVideo);
+          if (matchVideo) onPlayVideo({ ...matchVideo, batchTitle: batch.title, folderHistory, course_id: batch.id });
         } else if (route.testId) {
           const matchTest = resolvedItems.find((it) => String(it.id || it.entity_id) === String(route.testId));
-          if (matchTest) onStartTest(matchTest);
+          if (matchTest) onStartTest({ ...matchTest, batchTitle: batch.title, folderHistory, course_id: batch.id });
         }
       } catch (err) {
         console.error('Failed to load folder content:', err);

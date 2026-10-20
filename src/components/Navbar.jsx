@@ -40,12 +40,9 @@ export default function Navbar({
   const { logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
 
-  // Safely get productivity stats
-  let todaysTasksCount = 0;
-  try {
-    const tasksContext = useGoogleTasks();
-    todaysTasksCount = tasksContext?.todaysTasks?.length || 0;
-  } catch {}
+  // Productivity stats
+  const tasksContext = useGoogleTasks();
+  const todaysTasksCount = tasksContext?.todaysTasks?.length || 0;
 
   const [streakDays, setStreakDays] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

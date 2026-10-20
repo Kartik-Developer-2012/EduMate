@@ -116,8 +116,48 @@ export function extractMediaInfo(item) {
   const data = item.data || item;
   const thumbnail = data.thumbnail || data.batchImage || data.previewImage || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80';
   let fileUrl = data.file_url || data.videoUrl || data.url || data.attachmentUrl || data.fileUrl || '';
+  const vdcId = data.vdc_id || item.vdc_id || null;
 
-  // Parse download_urls JSON array if available (e.g. 240, 360, 480, 720)
+  // Check if it's a YouTube video
+  const lowerFileUrl = fileUrl.toLowerCase();
+  if (lowerFileUrl.includes('youtube.com') || lowerFileUrl.includes('youtu.be') || thumbnail.includes('i.ytimg.com/vi/')) {
+    let ytId = '';
+    const ytMatch = fileUrl.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*)/);
+    if (ytMatch && ytMatch[1]) {
+      ytId = ytMatch[1];
+    } else {
+      const thumbMatch = thumbnail.match(/vi\/([a-zA-Z0-9_-]{11})/);
+      if (thumbMatch && thumbMatch[1]) ytId = thumbMatch[1];
+    }
+
+    if (ytId) {
+      return {
+        type: 'youtube',
+        youtubeId: ytId,
+        url: `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1`,
+        thumbnail,
+        title: item.title || item.topic,
+        duration: data.duration || 0,
+        qualities: []
+      };
+    }
+  }
+
+  // If item has a VideoCrypt ID, it is a protected stream that requires resolving to master .m3u8
+  if (vdcId) {
+    return {
+      type: 'hls',
+      url: '',
+      needsResolution: true,
+      vdcId,
+      title: item.title || item.topic,
+      thumbnail,
+      duration: data.duration || 0,
+      qualities: []
+    };
+  }
+
+  // Parse download_urls JSON array if available (e.g. 240, 360, 480, 720) for non-VideoCrypt items
   let streamQualities = [];
   if (data.download_urls) {
     try {
@@ -139,31 +179,6 @@ export function extractMediaInfo(item) {
       }
     } catch (e) {
       console.warn('Could not parse download_urls:', e);
-    }
-  }
-
-  // Check if it's a YouTube video
-  const lowerFileUrl = fileUrl.toLowerCase();
-  if (lowerFileUrl.includes('youtube.com') || lowerFileUrl.includes('youtu.be') || thumbnail.includes('i.ytimg.com/vi/')) {
-    let ytId = '';
-    const ytMatch = fileUrl.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*)/);
-    if (ytMatch && ytMatch[1]) {
-      ytId = ytMatch[1];
-    } else {
-      const thumbMatch = thumbnail.match(/vi\/([a-zA-Z0-9_-]{11})/);
-      if (thumbMatch && thumbMatch[1]) ytId = thumbMatch[1];
-    }
-
-    if (ytId) {
-      return {
-        type: 'youtube',
-        youtubeId: ytId,
-        url: `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1`,
-        thumbnail,
-        title: item.title || item.topic,
-        duration: data.duration || 0,
-        qualities: []
-      };
     }
   }
 
@@ -228,153 +243,67 @@ export function extractMediaInfo(item) {
   };
 }
 
-// In-browser client fallback key caching and resolution
-const CLIENT_STORAGE_KEY = 'edumate_sb_key';
-let memoryKey = null;
-let memoryKeyExpiresAt = 0;
-let memoryDevId = null;
-
-function getStoredKey() {
-  if (memoryKey && Date.now() < memoryKeyExpiresAt) {
-    return { keyName: memoryKey, devId: memoryDevId };
-  }
-  try {
-    const raw = typeof window !== 'undefined' ? localStorage.getItem(CLIENT_STORAGE_KEY) : null;
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.keyName && parsed.expiresAt > Date.now() + 60000) {
-        memoryKey = parsed.keyName;
-        memoryKeyExpiresAt = parsed.expiresAt;
-        memoryDevId = parsed.devId;
-        return { keyName: memoryKey, devId: memoryDevId };
-      }
-    }
-  } catch (e) {}
-  return null;
-}
-
-function saveStoredKey(keyName, devId, expiresAt) {
-  memoryKey = keyName;
-  memoryKeyExpiresAt = expiresAt - 60000;
-  memoryDevId = devId;
-  try {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify({ keyName, devId, expiresAt }));
-    }
-  } catch (e) {}
-}
-
-async function getOrGenerateClientKey() {
-  const existing = getStoredKey();
-  if (existing) {
-    return existing;
-  }
-
-  const [{ initializeApp, getApps, getApp }, { getFirestore, doc, setDoc }, { getAuth, signInAnonymously }] = await Promise.all([
-    import('firebase/app'),
-    import('firebase/firestore'),
-    import('firebase/auth')
-  ]);
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAzxBCRdwK4NIyGwkzBrV9ev_53MJIfsOM",
-    authDomain: "smexgod.firebaseapp.com",
-    projectId: "smexgod",
-    storageBucket: "smexgod.firebasestorage.app",
-    messagingSenderId: "34615632505",
-    appId: "1:34615632505:web:6e7b5c39e847854ded6aa8"
-  };
-
-  const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig, "clientMediaResolverApp");
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-  if (!auth.currentUser) {
-    await signInAnonymously(auth);
-  }
-
-  const keyName = 'SB-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-  const devId = 'dev_' + Math.random().toString(36).substr(2, 9);
-  const expiresAt = Date.now() + (48 * 60 * 60 * 1000);
-
-  await setDoc(doc(db, 'valid_keys', keyName), {
-    createdAt: Date.now(),
-    expiresAt: expiresAt,
-    status: 'active',
-    createdBy: 'user_generate',
-    maxDevices: 1,
-    registeredDevices: []
-  });
-
-  saveStoredKey(keyName, devId, expiresAt);
-  return { keyName, devId };
-}
-
-async function directResolveMedia(courseId, contentId) {
-  const { keyName, devId } = await getOrGenerateClientKey();
-
-  let foyJson = null;
-  const urlsToTry = [
-    `/api/studybee/api/foy?content_id=${contentId}&course_id=${courseId}&key=${keyName}&device_id=${devId}`,
-    `${STUDYBEE_ORIGIN}/api/foy?content_id=${contentId}&course_id=${courseId}&key=${keyName}&device_id=${devId}`
+// Helper to resolve VideoCrypt streams directly
+async function resolveViaVideoCrypt(vdcId) {
+  if (!vdcId || vdcId === 'null') return null;
+  const urls = [
+    `/api/vc/${vdcId}`,
+    `${STUDYBEE_ORIGIN}/vc/${vdcId}`
   ];
 
-  for (const url of urlsToTry) {
+  for (const u of urls) {
     try {
-      const res = await fetch(url);
+      const res = await fetch(u);
       if (res.ok) {
-        const data = await res.json();
-        if (data && (data.decryptedData || data.data || data.drm_details || data.success !== false)) {
-          foyJson = data;
-          break;
+        const json = await res.json();
+        const link = json.data?.data?.link || json.data?.link || json.link || {};
+        const finalUrl = link.file_url || json.file_url || '';
+        if (finalUrl) {
+          const isHls = finalUrl.toLowerCase().includes('.m3u8');
+          return {
+            success: true,
+            url: finalUrl,
+            streamUrl: finalUrl,
+            type: isHls ? 'hls' : 'mp4',
+            token: link.token || null
+          };
         }
       }
     } catch (e) {
-      console.warn(`Fetch to ${url} failed:`, e);
+      console.warn(`VideoCrypt resolution via ${u} failed:`, e.message);
     }
   }
-
-  if (!foyJson) {
-    return { success: false, message: 'Could not contact media server' };
-  }
-
-  const mediaData = foyJson.decryptedData || foyJson.data || {};
-  const finalUrl = foyJson.drm_details?.data?.link?.file_url || mediaData.file_url || '';
-  const lowerUrl = finalUrl.toLowerCase();
-  const isPdf = mediaData.file_type === 1 || lowerUrl.includes('.pdf');
-  const isHls = lowerUrl.includes('.m3u8');
-  const isYouTube = mediaData.video_type === 1 || lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be');
-
-  if (finalUrl) {
-    return {
-      success: true,
-      url: finalUrl,
-      streamUrl: isPdf ? `/api/stream/pdf?url=${encodeURIComponent(finalUrl)}` : finalUrl,
-      type: isPdf ? 'pdf' : (isHls ? 'hls' : (isYouTube ? 'youtube' : 'mp4')),
-      mediaData,
-      drmToken: foyJson.drm_details?.data?.link?.token || null
-    };
-  }
-
-  return {
-    success: false,
-    message: foyJson.reason || 'Media stream not found'
-  };
+  return null;
 }
 
-// 6. Asynchronously resolve media (HLS .m3u8, direct PDF, or DRM) without ads or keys
-export async function resolveMediaContent(courseId, contentId) {
-  if (!courseId || !contentId) return { success: false, message: 'Missing courseId or contentId' };
+// 6. Asynchronously resolve media (VideoCrypt HLS .m3u8, direct PDF, or DRM)
+export async function resolveMediaContent(courseId, contentId, options = {}) {
+  if (!courseId && !contentId && !options) {
+    return { success: false, message: 'Missing parameters' };
+  }
 
-  // 1. Try backend/serverless resolver (/api/resolve-media)
+  const vdcId = (typeof options === 'string' ? options : options?.vdcId) ||
+                options?.item?.data?.vdc_id ||
+                options?.item?.vdc_id ||
+                options?.item?.data?.vdcId || null;
+  const folderId = options?.folderId || options?.item?.parent_id;
+
+  // 1. Direct VideoCrypt resolution if vdcId is present
+  if (vdcId) {
+    const vcResult = await resolveViaVideoCrypt(vdcId);
+    if (vcResult) return vcResult;
+  }
+
+  // 2. Try backend/serverless resolver (/api/resolve-media)
   try {
     const res = await fetch('/api/resolve-media', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ courseId, contentId })
+      body: JSON.stringify({ courseId, contentId, vdcId, folderId })
     });
     if (res.ok) {
       const data = await res.json();
-      if (data && data.success) {
+      if (data && data.success && data.url) {
         return data;
       }
     }
@@ -382,18 +311,57 @@ export async function resolveMediaContent(courseId, contentId) {
     console.warn('Backend resolve-media fetch failed:', err);
   }
 
-  // 2. Resilient client-side fallback (solves 404 on Netlify / static hosts)
-  try {
-    const fallbackResult = await directResolveMedia(courseId, contentId);
-    if (fallbackResult && fallbackResult.success) {
-      return fallbackResult;
+  // 3. Fallback: Query catalog to discover vdc_id if not known
+  if (courseId && contentId) {
+    try {
+      const catalogEndpoints = [
+        folderId ? `${PRIMARY_PROXY}?content=${courseId}&folder=${folderId}` : null,
+        `${PRIMARY_PROXY}?content=${courseId}`,
+        folderId ? `${DIRECT_WORKER}/?content=${courseId}&folder=${folderId}` : null,
+        `${DIRECT_WORKER}/?content=${courseId}`
+      ].filter(Boolean);
+
+      for (const ep of catalogEndpoints) {
+        try {
+          const res = await fetch(ep);
+          if (res.ok) {
+            const json = await res.json();
+            const items = json.data || [];
+            const match = items.find((it) => 
+              String(it.entity_id) === String(contentId) || 
+              String(it.data?.id) === String(contentId) ||
+              String(it.id) === String(contentId)
+            );
+
+            if (match) {
+              const itemVdc = match.data?.vdc_id || match.vdc_id;
+              if (itemVdc) {
+                const vcResult = await resolveViaVideoCrypt(itemVdc);
+                if (vcResult) return vcResult;
+              }
+              const directUrl = match.data?.file_url || match.file_url;
+              if (directUrl) {
+                const lower = directUrl.toLowerCase();
+                const isHls = lower.includes('.m3u8');
+                return {
+                  success: true,
+                  url: directUrl,
+                  streamUrl: directUrl,
+                  type: isHls ? 'hls' : 'mp4'
+                };
+              }
+            }
+          }
+        } catch {
+          // ignore endpoint error and continue fallback
+        }
+      }
+    } catch {
+      // ignore catalog error
     }
-    return fallbackResult;
-  } catch (directErr) {
-    console.error('Direct client-side media resolution failed:', directErr);
   }
 
-  return { success: false, message: 'Failed to connect to media resolver' };
+  return { success: false, message: 'Could not contact media server' };
 }
 
 // 7. Asynchronously resolve direct PDF stream without external redirects
@@ -410,7 +378,9 @@ export async function resolvePdfDocument(courseId, item) {
       if (Array.isArray(parsed) && parsed[0]?.url) {
         directUrl = parsed[0].url;
       }
-    } catch (e) {}
+    } catch {
+      // ignore parse error
+    }
   }
 
   // If already a direct PDF URL

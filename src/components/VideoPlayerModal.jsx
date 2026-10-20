@@ -54,9 +54,11 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
         return;
       }
 
-      // Check if item already has direct .m3u8 or playable video url (e.g. PW streams or CloudFront)
-      const directVideo = item.data?.file_url || item.videoUrl || item.url || mediaInfo.url;
-      if (directVideo && (directVideo.includes('.m3u8') || directVideo.includes('.mp4') || directVideo.includes('cloudfront.net') || item.provider === 'pw')) {
+      const vdcId = item?.data?.vdc_id || item?.vdc_id || mediaInfo?.vdcId || null;
+
+      // Check if item already has direct .m3u8 or playable video url (e.g. PW streams) and is NOT VideoCrypt
+      const directVideo = item.data?.file_url || item.videoUrl || item.url || (!mediaInfo.needsResolution ? mediaInfo.url : '');
+      if (directVideo && !vdcId && (directVideo.includes('.m3u8') || directVideo.includes('.mp4') || item.provider === 'pw')) {
         if (!isCancelled) {
           setCurrentSrc(directVideo);
           setStreamType(directVideo.includes('.m3u8') ? 'hls' : (mediaInfo.type || 'mp4'));
@@ -67,15 +69,15 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
 
       // Automatically resolve direct HLS / video stream from live API
       try {
-        const resolved = await resolveMediaContent(effectiveCourseId, item.entity_id);
+        const resolved = await resolveMediaContent(effectiveCourseId, item.entity_id, { vdcId, item });
         if (!isCancelled) {
           if (resolved.success && resolved.url) {
             setCurrentSrc(resolved.url);
             setStreamType(resolved.type || (resolved.url.includes('.m3u8') ? 'hls' : 'mp4'));
             setResolving(false);
           } else {
-            // Fallback to mediaInfo url if resolution didn't succeed
-            if (mediaInfo.url) {
+            // Fallback to mediaInfo url if resolution didn't succeed and it is a playable URL
+            if (mediaInfo.url && !mediaInfo.needsResolution) {
               setCurrentSrc(mediaInfo.url);
               setStreamType(mediaInfo.type);
             } else {
@@ -211,7 +213,9 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
   const retryPlayback = () => {
     setResolving(true);
     setHasPlaybackError(false);
-    resolveMediaContent(effectiveCourseId, item.entity_id).then((res) => {
+    setErrorMessage(null);
+    const vdcId = item?.data?.vdc_id || item?.vdc_id || mediaInfo?.vdcId || null;
+    resolveMediaContent(effectiveCourseId, item.entity_id, { vdcId, item }).then((res) => {
       if (res && res.success && res.url) {
         setCurrentSrc(res.url);
         setStreamType(res.type || (res.url.includes('.m3u8') ? 'hls' : 'mp4'));
@@ -307,7 +311,11 @@ export default function VideoPlayerModal({ item, courseId, onClose }) {
                 playsInline
                 preload="auto"
                 poster={mediaInfo.thumbnail}
-                onError={() => setHasPlaybackError(true)}
+                onError={() => {
+                  if (!resolving && currentSrc) {
+                    setHasPlaybackError(true);
+                  }
+                }}
                 className="w-full h-full object-contain aspect-video block"
               />
 

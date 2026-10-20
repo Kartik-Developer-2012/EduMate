@@ -10,6 +10,10 @@
       "destination": "https://nts.khatikgaurav38.workers.dev/$1"
     },
     {
+      "source": "/api/vc/(.*)",
+      "destination": "https://nt.studybeepro.site/vc/$1"
+    },
+    {
       "source": "/api/studybee/(.*)",
       "destination": "https://nt.studybeepro.site/$1"
     },
