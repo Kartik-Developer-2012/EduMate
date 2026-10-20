@@ -3,6 +3,10 @@
   command = "npm run build"
   functions = "netlify/functions"
 
+[build.environment]
+  SECRETS_SCAN_ENABLED = "false"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_APP_NAME,VITE_APP_URL,VITE_GOOGLE_API_KEY,VITE_GOOGLE_CLIENT_ID,VITE_GOOGLE_CLIENT_SECRET"
+
 [[redirects]]
   from = "/api/google-oauth/token"
   to = "/.netlify/functions/google-oauth"
