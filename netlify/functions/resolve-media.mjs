@@ -5,8 +5,8 @@ const CORS_HEADERS = {
   'Content-Type': 'application/json'
 };
 
-const NTS_WORKER = 'https://nts.khatikgaurav38.workers.dev';
-const STUDYBEE_ORIGIN = 'https://nt.studybeepro.site';
+const NTS_WORKER = 'https://nt.studyace.in/api/nig';
+const STUDYBEE_ORIGIN = 'https://nt.studyace.in';
 
 // 1. Resolve stream directly via VideoCrypt endpoint
 async function resolveViaVideoCrypt(vdcId) {
@@ -48,7 +48,7 @@ async function resolveViaVideoCrypt(vdcId) {
 // Helper to resolve media details via NextToppers/StudyBee /vc/media
 async function resolveViaVcMedia(courseId, contentId) {
   if (!courseId || !contentId) return null;
-  const url = `https://nt.studybeepro.site/vc/media?course_id=${courseId}&content_id=${contentId}`;
+  const url = `${STUDYBEE_ORIGIN}/vc/media?course_id=${courseId}&content_id=${contentId}`;
   try {
     const res = await fetch(url);
     if (res.ok) {
@@ -106,8 +106,8 @@ async function resolveMediaLogic(courseId, contentId, vdcId = null, folderId = n
   if (courseId && contentId) {
     try {
       const endpoints = [
-        folderId ? `${NTS_WORKER}/?content=${courseId}&folder=${folderId}` : null,
-        `${NTS_WORKER}/?content=${courseId}`
+        folderId ? `${NTS_WORKER}?content=${courseId}&folder=${folderId}` : null,
+        `${NTS_WORKER}?content=${courseId}`
       ].filter(Boolean);
 
       for (const ep of endpoints) {

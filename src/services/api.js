@@ -1,7 +1,7 @@
 // Live API service to fetch Next Toppers and EduMate data dynamically
 
 const PRIMARY_PROXY = '/api/nts';
-const DIRECT_WORKER = 'https://nts.khatikgaurav38.workers.dev';
+const DIRECT_API = 'https://nt.studyace.in/api/nig';
 
 function getCacheBuster() {
   return `&_t=${Date.now()}`;
@@ -10,7 +10,7 @@ function getCacheBuster() {
 // In-memory cache for course overview and folder contents (prevents 429 rate limit spam)
 const ntsCache = new Map();
 
-// Fetch helper with fallback across proxy and direct Cloudflare worker
+// Fetch helper with fallback across proxy and direct active API
 async function fetchWithFallback(queryString, options = {}) {
   const cacheKey = queryString.replace(/&_t=\d+/, '');
   if (!options.method || options.method === 'GET') {
@@ -30,12 +30,12 @@ async function fetchWithFallback(queryString, options = {}) {
       return data;
     }
   } catch {
-    // continue to direct worker fallback
+    // continue to direct API fallback
   }
 
-  // 2. Fallback to direct worker
+  // 2. Direct fallback to live Next Toppers endpoint (CORS enabled)
   try {
-    const fallbackRes = await fetch(`${DIRECT_WORKER}${queryString}`, options);
+    const fallbackRes = await fetch(`${DIRECT_API}${queryString}`, options);
     if (fallbackRes.ok) {
       const data = await fallbackRes.json();
       ntsCache.set(cacheKey, { data, timestamp: Date.now() });

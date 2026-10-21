@@ -272,7 +272,7 @@ function mediaStreamPlugin() {
             // A. If vdcId was provided directly
             if (vdcId) {
               try {
-                const vcRes = await fetch(`https://nt.studybeepro.site/vc/${vdcId}`);
+                const vcRes = await fetch(`https://nt.studyace.in/vc/${vdcId}`);
                 if (vcRes.ok) {
                   const vcJson = await vcRes.json();
                   const fileUrl = vcJson.data?.data?.link?.file_url || vcJson.data?.link?.file_url;
@@ -291,7 +291,7 @@ function mediaStreamPlugin() {
             // B. Direct /vc/media resolution for notes, documents & dynamic items
             if (courseId && contentId) {
               try {
-                const vcMediaRes = await fetch(`https://nt.studybeepro.site/vc/media?course_id=${courseId}&content_id=${contentId}`);
+                const vcMediaRes = await fetch(`https://nt.studyace.in/vc/media?course_id=${courseId}&content_id=${contentId}`);
                 if (vcMediaRes.ok) {
                   const json = await vcMediaRes.json();
                   const contentData = json.decryptedData || json.data || {};
@@ -312,7 +312,7 @@ function mediaStreamPlugin() {
                   }
 
                   if (itemVdc) {
-                    const vcRes = await fetch(`https://nt.studybeepro.site/vc/${itemVdc}`);
+                    const vcRes = await fetch(`https://nt.studyace.in/vc/${itemVdc}`);
                     if (vcRes.ok) {
                       const vcJson = await vcRes.json();
                       const vUrl = vcJson.data?.data?.link?.file_url || vcJson.data?.link?.file_url;
@@ -333,7 +333,7 @@ function mediaStreamPlugin() {
 
             // C. Catalog lookup
             if (courseId && contentId) {
-              const ep = folder ? `https://nts.khatikgaurav38.workers.dev/?content=${courseId}&folder=${folder}` : `https://nts.khatikgaurav38.workers.dev/?content=${courseId}`;
+              const ep = folder ? `https://nt.studyace.in/api/nig?content=${courseId}&folder=${folder}` : `https://nt.studyace.in/api/nig?content=${courseId}`;
               try {
                 const catRes = await fetch(ep);
                 if (catRes.ok) {
@@ -342,7 +342,7 @@ function mediaStreamPlugin() {
                   if (match) {
                     const itemVdc = match.data?.vdc_id || match.vdc_id;
                     if (itemVdc) {
-                      const vcRes = await fetch(`https://nt.studybeepro.site/vc/${itemVdc}`);
+                      const vcRes = await fetch(`https://nt.studyace.in/vc/${itemVdc}`);
                       if (vcRes.ok) {
                         const vcJson = await vcRes.json();
                         const fileUrl = vcJson.data?.data?.link?.file_url || vcJson.data?.link?.file_url;
@@ -482,17 +482,17 @@ export default defineConfig({
         }
       },
       '/api/nts': {
-        target: 'https://nts.khatikgaurav38.workers.dev',
+        target: 'https://nt.studyace.in',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/nts/, ''),
+        rewrite: (path) => path.replace(/^\/api\/nts/, '/api/nig'),
       },
       '/api/vc': {
-        target: 'https://nt.studybeepro.site',
+        target: 'https://nt.studyace.in',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/vc/, '/vc'),
       },
       '/api/studybee': {
-        target: 'https://nt.studybeepro.site',
+        target: 'https://nt.studyace.in',
         changeOrigin: true,
       }
     }

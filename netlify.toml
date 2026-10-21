@@ -39,13 +39,19 @@
 
 [[redirects]]
   from = "/api/nts"
-  to = "https://nts.khatikgaurav38.workers.dev/"
+  to = "https://nt.studyace.in/api/nig"
   status = 200
   force = true
 
 [[redirects]]
   from = "/api/nts/*"
-  to = "https://nts.khatikgaurav38.workers.dev/:splat"
+  to = "https://nt.studyace.in/api/nig/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/vc/*"
+  to = "https://nt.studyace.in/vc/:splat"
   status = 200
   force = true
 
