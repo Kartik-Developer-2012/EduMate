@@ -276,6 +276,48 @@ async function resolveViaVideoCrypt(vdcId) {
   return null;
 }
 
+// Helper to resolve media/notes details directly via StudyBee/NextToppers /vc/media
+async function resolveViaVcMedia(courseId, contentId) {
+  if (!courseId || !contentId) return null;
+  const urls = [
+    `/api/vc/media?course_id=${courseId}&content_id=${contentId}`,
+    `${STUDYBEE_ORIGIN}/vc/media?course_id=${courseId}&content_id=${contentId}`
+  ];
+
+  for (const u of urls) {
+    try {
+      const res = await fetch(u);
+      if (res.ok) {
+        const json = await res.json();
+        const contentData = json.decryptedData || json.data || {};
+        const fileUrl = contentData.file_url || '';
+        const vdcId = contentData.vdc_id;
+        const isPdf = contentData.file_type === 1 || fileUrl.toLowerCase().includes('.pdf');
+        const isHls = fileUrl.toLowerCase().includes('.m3u8');
+
+        if (fileUrl) {
+          return {
+            success: true,
+            url: fileUrl,
+            streamUrl: isPdf ? `/api/stream/pdf?url=${encodeURIComponent(fileUrl)}` : fileUrl,
+            type: isPdf ? 'pdf' : (isHls ? 'hls' : 'mp4'),
+            mediaData: contentData
+          };
+        }
+
+        // If it's a DRM video with vdc_id
+        if (vdcId) {
+          const vcResult = await resolveViaVideoCrypt(vdcId);
+          if (vcResult) return vcResult;
+        }
+      }
+    } catch (e) {
+      console.warn(`VC media resolution via ${u} failed:`, e.message);
+    }
+  }
+  return null;
+}
+
 // 6. Asynchronously resolve media (VideoCrypt HLS .m3u8, direct PDF, or DRM)
 export async function resolveMediaContent(courseId, contentId, options = {}) {
   if (!courseId && !contentId && !options) {
@@ -294,7 +336,13 @@ export async function resolveMediaContent(courseId, contentId, options = {}) {
     if (vcResult) return vcResult;
   }
 
-  // 2. Try backend/serverless resolver (/api/resolve-media)
+  // 2. Direct /vc/media resolution for notes, documents & dynamic items
+  if (courseId && contentId) {
+    const vcMediaResult = await resolveViaVcMedia(courseId, contentId);
+    if (vcMediaResult) return vcMediaResult;
+  }
+
+  // 3. Try backend/serverless resolver (/api/resolve-media)
   try {
     const res = await fetch('/api/resolve-media', {
       method: 'POST',
@@ -311,7 +359,7 @@ export async function resolveMediaContent(courseId, contentId, options = {}) {
     console.warn('Backend resolve-media fetch failed:', err);
   }
 
-  // 3. Fallback: Query catalog to discover vdc_id if not known
+  // 4. Fallback: Query catalog to discover vdc_id if not known
   if (courseId && contentId) {
     try {
       const catalogEndpoints = [
@@ -392,9 +440,24 @@ export async function resolvePdfDocument(courseId, item) {
     };
   }
 
-  // Call the server resolver
   const effectiveCourseId = courseId || item.course_id || item.data?.course_id;
-  const res = await resolveMediaContent(effectiveCourseId, item.entity_id);
+  const contentId = item.entity_id || item.id || item.data?.id;
+  const folderId = item.parent_id || item.data?.parent_id;
+
+  // 1. Direct resolution via VC media (instant for ACP notes and documents)
+  if (effectiveCourseId && contentId) {
+    const vcMediaResult = await resolveViaVcMedia(effectiveCourseId, contentId);
+    if (vcMediaResult && vcMediaResult.success && vcMediaResult.url) {
+      return {
+        success: true,
+        url: vcMediaResult.url,
+        streamUrl: vcMediaResult.streamUrl || `/api/stream/pdf?url=${encodeURIComponent(vcMediaResult.url)}`
+      };
+    }
+  }
+
+  // 2. General resolveMediaContent fallback with folderId and item
+  const res = await resolveMediaContent(effectiveCourseId, contentId, { folderId, item });
   if (res.success && res.url) {
     return {
       success: true,

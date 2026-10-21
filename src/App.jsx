@@ -365,7 +365,7 @@ function AppContent() {
       {playingVideoItem && (
         <VideoPlayerModal
           item={playingVideoItem}
-          courseId={selectedBatch?.id}
+          courseId={selectedBatch?.id || playingVideoItem?.course_id || route.batchId}
           onClose={handleCloseVideo}
         />
       )}
@@ -373,7 +373,7 @@ function AppContent() {
       {viewingPdfItem && (
         <PdfViewerModal
           item={viewingPdfItem}
-          courseId={selectedBatch?.id}
+          courseId={selectedBatch?.id || viewingPdfItem?.course_id || route.batchId}
           onClose={handleClosePdf}
         />
       )}

@@ -286,10 +286,52 @@ function mediaStreamPlugin() {
                     return;
                   }
                 }
-              } catch (e) {}
+              } catch {}
+            }
+            // B. Direct /vc/media resolution for notes, documents & dynamic items
+            if (courseId && contentId) {
+              try {
+                const vcMediaRes = await fetch(`https://nt.studybeepro.site/vc/media?course_id=${courseId}&content_id=${contentId}`);
+                if (vcMediaRes.ok) {
+                  const json = await vcMediaRes.json();
+                  const contentData = json.decryptedData || json.data || {};
+                  const fileUrl = contentData.file_url || '';
+                  const itemVdc = contentData.vdc_id;
+                  const isPdf = contentData.file_type === 1 || fileUrl.toLowerCase().includes('.pdf');
+                  const isHls = fileUrl.toLowerCase().includes('.m3u8');
+
+                  if (fileUrl) {
+                    res.end(JSON.stringify({
+                      success: true,
+                      url: fileUrl,
+                      streamUrl: isPdf ? `/api/stream/pdf?url=${encodeURIComponent(fileUrl)}` : fileUrl,
+                      type: isPdf ? 'pdf' : (isHls ? 'hls' : 'mp4'),
+                      mediaData: contentData
+                    }));
+                    return;
+                  }
+
+                  if (itemVdc) {
+                    const vcRes = await fetch(`https://nt.studybeepro.site/vc/${itemVdc}`);
+                    if (vcRes.ok) {
+                      const vcJson = await vcRes.json();
+                      const vUrl = vcJson.data?.data?.link?.file_url || vcJson.data?.link?.file_url;
+                      if (vUrl) {
+                        res.end(JSON.stringify({
+                          success: true,
+                          url: vUrl,
+                          streamUrl: vUrl,
+                          type: vUrl.includes('.m3u8') ? 'hls' : 'mp4'
+                        }));
+                        return;
+                      }
+                    }
+                  }
+                }
+              } catch {}
             }
 
-            // B. Catalog lookup
+            // C. Catalog lookup
             if (courseId && contentId) {
               const ep = folder ? `https://nts.khatikgaurav38.workers.dev/?content=${courseId}&folder=${folder}` : `https://nts.khatikgaurav38.workers.dev/?content=${courseId}`;
               try {

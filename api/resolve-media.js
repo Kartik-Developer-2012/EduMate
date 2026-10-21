@@ -38,6 +38,41 @@ async function resolveViaVideoCrypt(vdcId) {
   return null;
 }
 
+// Helper to resolve media details via NextToppers/StudyBee /vc/media
+async function resolveViaVcMedia(courseId, contentId) {
+  if (!courseId || !contentId) return null;
+  const url = `https://nt.studybeepro.site/vc/media?course_id=${courseId}&content_id=${contentId}`;
+  try {
+    const res = await fetch(url);
+    if (res.ok) {
+      const json = await res.json();
+      const contentData = json.decryptedData || json.data || {};
+      const fileUrl = contentData.file_url || '';
+      const vdcId = contentData.vdc_id;
+      const isPdf = contentData.file_type === 1 || fileUrl.toLowerCase().includes('.pdf');
+      const isHls = fileUrl.toLowerCase().includes('.m3u8');
+
+      if (fileUrl) {
+        return {
+          success: true,
+          url: fileUrl,
+          streamUrl: isPdf ? `/api/stream/pdf?url=${encodeURIComponent(fileUrl)}` : fileUrl,
+          type: isPdf ? 'pdf' : (isHls ? 'hls' : 'mp4'),
+          mediaData: contentData
+        };
+      }
+
+      if (vdcId) {
+        const vcResult = await resolveViaVideoCrypt(vdcId);
+        if (vcResult) return vcResult;
+      }
+    }
+  } catch (err) {
+    console.warn(`VC media resolution failed for course ${courseId} content ${contentId}:`, err.message);
+  }
+  return null;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -66,6 +101,14 @@ export default async function handler(req, res) {
       const vcResult = await resolveViaVideoCrypt(vdcId);
       if (vcResult) {
         return res.status(200).json(vcResult);
+      }
+    }
+
+    // B. Query /vc/media for direct content resolution (e.g. ACP notes, PDFs, documents)
+    if (courseId && contentId) {
+      const vcMediaResult = await resolveViaVcMedia(courseId, contentId);
+      if (vcMediaResult) {
+        return res.status(200).json(vcMediaResult);
       }
     }
 
