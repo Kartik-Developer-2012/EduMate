@@ -65,6 +65,33 @@ async function pwFetch(endpoint, options = {}) {
   }
 }
 
+// Utility: Strip raw HTML, scripts, styles, and decode HTML entities from text/descriptions
+export function stripHtml(input) {
+  if (!input || typeof input !== 'string') return '';
+  let text = input
+    .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<\/(p|div|tr|li|h[1-6]|section|article)>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&bull;/gi, '•')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // If the extracted text still contains CSS rule remnants (e.g., .desc-container { ... }), discard it
+  if (text.includes('{') && text.includes('}') && text.includes(':')) {
+    return '';
+  }
+  return text;
+}
+
 // 1. Dynamically fetch all PW batches (with search & pagination)
 export async function fetchPwBatches(page = 1, searchQuery = '') {
   try {
@@ -82,14 +109,16 @@ export async function fetchPwBatches(page = 1, searchQuery = '') {
         id: id,
         batchId: id,
         provider: 'pw',
-        title: item.batchName || 'Physics Wallah Batch',
-        batchName: item.batchName,
-        thumbnail: item.batchImage || item.iosPreviewImageUrl || 'https://static.pw.live/5eb393ee95fab7468a79d189/ADMIN/2cd05c71-3897-4e88-9c73-3e307e0dde03.jpg',
-        batchImage: item.batchImage,
+        title: item.batchName || item.name || 'Physics Wallah Batch',
+        batchName: item.batchName || item.name,
+        thumbnail: item.batchImage || item.previewImage?.baseUrl || item.iosPreviewImageUrl || 'https://static.pw.live/5eb393ee95fab7468a79d189/ADMIN/2cd05c71-3897-4e88-9c73-3e307e0dde03.jpg',
+        batchImage: item.batchImage || item.previewImage?.baseUrl,
+        description: stripHtml(item.batchDescription || item.description || ''),
+        rawDescription: item.batchDescription || item.description || '',
         language: item.language || 'Hinglish',
         startDate: item.startDate,
         endDate: item.endDate,
-        price: typeof item.batchPrice === 'number' ? item.batchPrice : 0,
+        price: typeof item.batchPrice === 'number' ? item.batchPrice : (item.feeId?.total || 0),
         byName: item.byName || 'PW Star Faculty',
         template: item.template || 'NORMAL',
         raw: item
@@ -133,17 +162,18 @@ export async function fetchPwBatchDetails(batchId) {
         id: batchId,
         batchId: batchId,
         provider: 'pw',
-        title: data.batchName || 'Physics Wallah Batch',
-        batchName: data.batchName,
-        thumbnail: data.batchImage || data.iosPreviewImageUrl || 'https://static.pw.live/5eb393ee95fab7468a79d189/ADMIN/2cd05c71-3897-4e88-9c73-3e307e0dde03.jpg',
-        batchImage: data.batchImage,
-        description: data.batchDescription || data.description || '',
+        title: data.batchName || data.name || 'Physics Wallah Batch',
+        batchName: data.batchName || data.name,
+        thumbnail: data.batchImage || data.previewImage?.baseUrl || data.iosPreviewImageUrl || 'https://static.pw.live/5eb393ee95fab7468a79d189/ADMIN/2cd05c71-3897-4e88-9c73-3e307e0dde03.jpg',
+        batchImage: data.batchImage || data.previewImage?.baseUrl,
+        description: stripHtml(data.batchDescription || data.description || ''),
+        rawDescription: data.batchDescription || data.description || '',
         language: data.language || 'Hinglish',
         startDate: data.startDate,
         endDate: data.endDate,
-        price: data.batchPrice || 0,
+        price: typeof data.batchPrice === 'number' ? data.batchPrice : (data.feeId?.total || 0),
         byName: data.byName || 'Physics Wallah Faculty',
-        subjects: Array.isArray(data.subjects) ? data.subjects : [],
+        subjects: Array.isArray(data.subjects) ? data.subjects : (Array.isArray(data.subjectDetails) ? data.subjectDetails : []),
         raw: data
       };
     }

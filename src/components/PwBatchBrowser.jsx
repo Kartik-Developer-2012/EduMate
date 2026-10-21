@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   ArrowLeft,
   BookOpen,
@@ -17,7 +17,9 @@ import {
   Bookmark,
   ShieldCheck,
   CalendarCheck,
-  Search
+  Search,
+  LogIn,
+  RefreshCw
 } from 'lucide-react';
 import {
   fetchPwBatchDetails,
@@ -25,7 +27,9 @@ import {
   fetchPwTopicContent,
   fetchPwPdf,
   fetchPwSchedule,
-  getPwTeacherName
+  getPwTeacherName,
+  stripHtml,
+  pwEnrollBatch
 } from '../services/pwApi';
 import { useCourse } from '../context/CourseContext';
 import { useRouter } from '../context/RouterContext';
@@ -35,9 +39,19 @@ export default function PwBatchBrowser({
   batch, 
   onBack, 
   onPlayVideo, 
-  onViewPdf 
+  onViewPdf,
+  onOpenPwLogin
 }) {
-  const { isLectureCompleted, toggleLectureComplete, toggleBookmark, isBookmarked, isEnrolled, toggleEnroll } = useCourse();
+  const { 
+    isLectureCompleted, 
+    toggleLectureComplete, 
+    toggleBookmark, 
+    isBookmarked, 
+    isEnrolled, 
+    toggleEnroll,
+    pwUser,
+    masterActive
+  } = useCourse();
   const { route, navigate } = useRouter();
 
   const [loadingBatch, setLoadingBatch] = useState(true);
@@ -60,11 +74,19 @@ export default function PwBatchBrowser({
   // Search in chapter contents
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileChapterMenuOpen, setMobileChapterMenuOpen] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
 
   const enrolled = isEnrolled(batch?.id);
 
+  // Clean description - guaranteed to never output raw HTML tags or styles
+  const cleanDescription = useMemo(() => {
+    const raw = batchDetails?.description || batch?.description || batchDetails?.rawDescription || '';
+    const cleaned = stripHtml(raw);
+    return cleaned || 'Access live lectures, chapter notes, daily DPPs and test series completely free with zero ads.';
+  }, [batchDetails?.description, batch?.description, batchDetails?.rawDescription]);
+
   // Schedule loader declared first
-  const loadBatchSchedule = React.useCallback(async () => {
+  const loadBatchSchedule = useCallback(async () => {
     setLoadingSchedule(true);
     try {
       const schedule = await fetchPwSchedule(batch.id);
@@ -83,35 +105,62 @@ export default function PwBatchBrowser({
     }
   }, [route.tab, activeTab]);
 
-  // 1. Fetch live batch details on mount
+  // 1. Fetch live batch details on mount or when user authenticates
+  const loadDetails = useCallback(async () => {
+    setLoadingBatch(true);
+    try {
+      const details = await fetchPwBatchDetails(batch.id);
+      setBatchDetails(details || batch);
+      const subs = details?.subjects || batch?.subjects || [];
+      if (subs.length > 0) {
+        let targetSub = subs[0];
+        if (route.subjectId) {
+          const matched = subs.find(s => String(s._id || s.id) === String(route.subjectId));
+          if (matched) targetSub = matched;
+        }
+        setActiveSubject(targetSub);
+      } else {
+        setActiveSubject(null);
+      }
+    } catch (err) {
+      console.error('Failed to load PW batch details:', err);
+    } finally {
+      setLoadingBatch(false);
+    }
+  }, [batch.id, batch, route.subjectId]);
+
   useEffect(() => {
-    let isCancelled = false;
-    async function loadDetails() {
-      setLoadingBatch(true);
+    loadDetails();
+  }, [loadDetails, pwUser, masterActive]);
+
+  // Handle Free Enrollment with live PW sync
+  const handleEnrollToggle = async () => {
+    if (!enrolled && !pwUser && !masterActive && onOpenPwLogin) {
+      onOpenPwLogin();
+      return;
+    }
+
+    toggleEnroll(batch.id);
+
+    if (pwUser) {
+      setEnrolling(true);
       try {
-        const details = await fetchPwBatchDetails(batch.id);
-        if (!isCancelled) {
-          setBatchDetails(details || batch);
-          const subs = details?.subjects || batch?.subjects || [];
-          if (subs.length > 0) {
-            let targetSub = subs[0];
-            if (route.subjectId) {
-              const matched = subs.find(s => String(s._id || s.id) === String(route.subjectId));
-              if (matched) targetSub = matched;
-            }
-            setActiveSubject(targetSub);
+        await pwEnrollBatch(batch.id, batchDetails?.title || batch.title || 'PW Batch');
+        const updated = await fetchPwBatchDetails(batch.id);
+        if (updated) {
+          setBatchDetails(updated);
+          const subs = updated.subjects || [];
+          if (subs.length > 0 && !activeSubject) {
+            setActiveSubject(subs[0]);
           }
         }
       } catch (err) {
-        console.error('Failed to load PW batch details:', err);
+        console.warn('Live PW enrollment sync error:', err);
       } finally {
-        if (!isCancelled) setLoadingBatch(false);
+        setEnrolling(false);
       }
     }
-
-    loadDetails();
-    return () => { isCancelled = true; };
-  }, [batch.id, batch, route.subjectId]);
+  };
 
   // 2. Fetch live chapters when activeSubject changes
   useEffect(() => {
@@ -286,14 +335,20 @@ export default function PwBatchBrowser({
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => toggleEnroll(batch.id)}
+            onClick={handleEnrollToggle}
+            disabled={enrolling}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 btn-press ${
               enrolled
                 ? 'bg-[#457B9D]/20 text-[#A8DADC] border border-[#457B9D]/40'
                 : 'bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] shadow-sm'
             }`}
           >
-            {enrolled ? (
+            {enrolling ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-[#A8DADC]" />
+                <span>Enrolling...</span>
+              </>
+            ) : enrolled ? (
               <>
                 <CheckCircle2 className="w-4 h-4 text-[#A8DADC]" />
                 <span>Enrolled in Batch</span>
@@ -341,7 +396,7 @@ export default function PwBatchBrowser({
             </h1>
 
             <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] mt-2 line-clamp-2 max-w-3xl leading-relaxed">
-              {batchDetails?.description || 'Access live lectures, chapter notes, daily DPPs and test series completely free with zero ads.'}
+              {cleanDescription}
             </p>
 
             <div className="flex flex-wrap items-center gap-4 mt-4 text-xs text-[var(--color-text-secondary)]">
@@ -375,9 +430,66 @@ export default function PwBatchBrowser({
             <span className="text-xs">Loading live subjects...</span>
           </div>
         ) : subjectsList.length === 0 ? (
-          <div className="p-4 card-surface rounded-2xl text-xs text-[var(--color-text-secondary)]">
-            No subjects returned for this batch. The live batch may require enrollment or has no active schedules.
-          </div>
+          !pwUser && !masterActive ? (
+            <div className="p-5 card-surface rounded-2xl border border-[#457B9D]/40 bg-gradient-to-r from-[#1D3557]/60 via-[#457B9D]/20 to-[#1D3557]/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#457B9D]/30 border border-[#457B9D]/50 flex items-center justify-center shrink-0 mt-0.5">
+                  <ShieldCheck className="w-5 h-5 text-[#A8DADC]" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[#F1FAEE] flex items-center gap-2">
+                    <span>Physics Wallah Session Required</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#457B9D]/30 text-[#A8DADC] border border-[#457B9D]/50">
+                      OTP Login
+                    </span>
+                  </h3>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-1 max-w-2xl leading-relaxed">
+                    This live batch requires an active PW student session to load subject schedules, recorded lectures, and DPPs. Connect your PW account using a one-time OTP to unlock all content.
+                  </p>
+                </div>
+              </div>
+              {onOpenPwLogin && (
+                <button
+                  onClick={onOpenPwLogin}
+                  className="px-4 py-2.5 rounded-xl bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] text-xs font-bold transition-all flex items-center gap-2 shrink-0 btn-press shadow-md"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Connect PW Account</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="p-5 card-surface rounded-2xl border border-[var(--color-border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[var(--color-surface-hover)] border border-[var(--color-border)] flex items-center justify-center shrink-0">
+                  <BookOpen className="w-5 h-5 text-[var(--color-text-muted)]" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[#F1FAEE]">
+                    No Active Subjects Published Yet
+                  </h4>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                    This batch is scheduled on Physics Wallah but faculty has not published active subject schedules yet.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={loadDetails}
+                  className="px-3.5 py-2 rounded-xl bg-[var(--color-surface-hover)] hover:bg-[var(--color-surface)] border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-primary)] transition-all flex items-center gap-1.5 btn-press"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Refresh</span>
+                </button>
+                <button
+                  onClick={onBack}
+                  className="px-3.5 py-2 rounded-xl bg-[#1D3557] hover:bg-[#223E5E] border border-[#457B9D]/40 text-xs font-semibold text-[#A8DADC] transition-all flex items-center gap-1.5 btn-press"
+                >
+                  <span>Explore Other Batches</span>
+                </button>
+              </div>
+            </div>
+          )
         ) : (
           <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none">
             {subjectsList.map((subj) => {
@@ -423,9 +535,28 @@ export default function PwBatchBrowser({
             {loadingChapters ? (
               <SkeletonLoader variant="chapter-list" count={5} />
             ) : chapters.length === 0 ? (
-              <div className="text-center py-12 text-[var(--color-text-muted)] text-xs">
-                No chapters found for this subject.
-              </div>
+              !pwUser && !masterActive ? (
+                <div className="text-center py-16 px-4 flex flex-col items-center justify-center text-[var(--color-text-muted)] text-xs">
+                  <ShieldCheck className="w-10 h-10 text-[#A8DADC]/60 mb-2.5" />
+                  <p className="font-semibold text-[var(--color-text-primary)] mb-1">Chapters Locked</p>
+                  <p className="text-[11px] text-[var(--color-text-secondary)] mb-4 max-w-xs text-center">
+                    Login with your PW mobile number to unlock live chapters, recordings, and study notes.
+                  </p>
+                  {onOpenPwLogin && (
+                    <button
+                      onClick={onOpenPwLogin}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] text-xs font-bold transition-all flex items-center gap-1.5 btn-press shadow-sm"
+                    >
+                      <LogIn className="w-3.5 h-3.5" />
+                      <span>Connect PW Account</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-[var(--color-text-muted)] text-xs">
+                  No chapters found for this subject.
+                </div>
+              )
             ) : (
               chapters.map((ch, idx) => {
                 const chId = ch._id || ch.id;
@@ -506,7 +637,7 @@ export default function PwBatchBrowser({
                   </div>
                 ) : chapters.length === 0 ? (
                   <div className="text-center py-4 text-xs text-[var(--color-text-muted)]">
-                    No chapters found for this subject.
+                    {!pwUser && !masterActive ? 'PW account connection required to load chapters.' : 'No chapters found for this subject.'}
                   </div>
                 ) : (
                   chapters.map((ch, idx) => {
@@ -677,10 +808,29 @@ export default function PwBatchBrowser({
                 <span className="text-xs font-medium">Loading live {activeTab} from Physics Wallah...</span>
               </div>
             ) : filteredItems.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center py-20 text-[var(--color-text-muted)] text-xs">
-                <Layers className="w-10 h-10 mx-auto mb-2 text-[var(--color-text-muted)]" />
-                <p>No {activeTab} available for this chapter yet.</p>
-              </div>
+              !pwUser && !masterActive ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-20 text-[var(--color-text-muted)] text-xs text-center px-4">
+                  <ShieldCheck className="w-12 h-12 mx-auto mb-3 text-[#A8DADC]/60" />
+                  <h4 className="font-bold text-sm text-[var(--color-text-primary)] mb-1">Lectures & Notes Protected</h4>
+                  <p className="text-xs text-[var(--color-text-secondary)] max-w-md mb-4 leading-relaxed">
+                    Physics Wallah video streams and PDF study materials require student authentication. Connect your PW account once via OTP to start streaming lectures ad-free.
+                  </p>
+                  {onOpenPwLogin && (
+                    <button
+                      onClick={onOpenPwLogin}
+                      className="px-4 py-2 rounded-xl bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] text-xs font-bold transition-all flex items-center gap-2 btn-press shadow-md"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      <span>Connect PW Account</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center py-20 text-[var(--color-text-muted)] text-xs">
+                  <Layers className="w-10 h-10 mx-auto mb-2 text-[var(--color-text-muted)]" />
+                  <p>No {activeTab} available for this chapter yet.</p>
+                </div>
+              )
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredItems.map((item, idx) => {

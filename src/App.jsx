@@ -316,6 +316,7 @@ function AppContent() {
               onBack={handleBackToBatches}
               onPlayVideo={handlePlayVideo}
               onViewPdf={handleViewPdf}
+              onOpenPwLogin={() => setShowPwAuthModal(true)}
             />
           ) : (
             <FolderBrowser
