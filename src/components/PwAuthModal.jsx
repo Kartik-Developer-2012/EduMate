@@ -63,7 +63,10 @@ export default function PwAuthModal({ isOpen, onClose, onSuccess }) {
         setTimer(45);
         setSuccessMsg(res.message || `OTP sent via ${smsType === '1' ? 'WhatsApp' : 'SMS'}! Check your phone.`);
       } else {
-        setError(res?.message || 'Failed to send OTP. Please try again.');
+        const msg = (res?.unavailable || res?.message?.includes('fetch failed') || res?.message?.includes('unreachable'))
+          ? 'The Physics Wallah upstream server is currently offline or undergoing maintenance. Please access Next Toppers batches in the meantime.'
+          : (res?.message || 'Failed to send OTP. Please try again.');
+        setError(msg);
       }
     } catch (err) {
       console.error('Send OTP error:', err);

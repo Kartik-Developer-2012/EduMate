@@ -335,7 +335,7 @@ async function handlePwProxyRequest({ method, url, path, headers, bodyRaw, query
       body: JSON.stringify({
         success: false,
         unavailable: true,
-        message: `Physics Wallah service is currently unreachable: ${err.message}`,
+        message: 'The Physics Wallah upstream server is currently offline or undergoing maintenance.',
         upstreamUrl,
         batches: [],
         data: null
