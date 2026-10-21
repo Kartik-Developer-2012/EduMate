@@ -253,10 +253,13 @@ export default async function handler(req, res) {
     const textData = await upstreamRes.text();
     return res.status(upstreamRes.status).send(textData);
   } catch (err) {
-    console.error(`[vercel-pw-proxy] Fetch error:`, err);
-    return res.status(502).json({
+    console.warn(`[vercel-pw-proxy] Fetch notice:`, err.message);
+    return res.status(200).json({
       success: false,
-      message: `Physics Wallah proxy error: ${err.message}`
+      unavailable: true,
+      message: `Physics Wallah service is currently unreachable: ${err.message}`,
+      batches: [],
+      data: null
     });
   }
 }

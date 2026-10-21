@@ -2,62 +2,77 @@
 
 const PRIMARY_PROXY = '/api/nts';
 const DIRECT_WORKER = 'https://nts.khatikgaurav38.workers.dev';
-const STUDYBEE_ORIGIN = 'https://nt.studybeepro.site';
 
 function getCacheBuster() {
   return `&_t=${Date.now()}`;
 }
 
+// In-memory cache for course overview and folder contents (prevents 429 rate limit spam)
+const ntsCache = new Map();
+
 // Fetch helper with fallback across proxy and direct Cloudflare worker
 async function fetchWithFallback(queryString, options = {}) {
+  const cacheKey = queryString.replace(/&_t=\d+/, '');
+  if (!options.method || options.method === 'GET') {
+    const cached = ntsCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp < 120000)) { // 2 minute cache
+      return cached.data;
+    }
+  }
+
+  // 1. Try local proxy /api/nts
   try {
     const res = await fetch(`${PRIMARY_PROXY}${queryString}`, options);
-    const contentType = res.headers.get('content-type');
-    if (!res.ok || (contentType && contentType.includes('text/html'))) {
-      throw new Error('Primary proxy returned non-JSON');
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
+      const data = await res.json();
+      ntsCache.set(cacheKey, { data, timestamp: Date.now() });
+      return data;
     }
-    return await res.json();
-  } catch (primaryErr) {
-    const fallbackRes = await fetch(`${DIRECT_WORKER}${queryString}`, options);
-    if (!fallbackRes.ok) {
-      throw new Error(`API HTTP Error: ${fallbackRes.status}`);
-    }
-    return await fallbackRes.json();
+  } catch {
+    // continue to direct worker fallback
   }
+
+  // 2. Fallback to direct worker
+  try {
+    const fallbackRes = await fetch(`${DIRECT_WORKER}${queryString}`, options);
+    if (fallbackRes.ok) {
+      const data = await fallbackRes.json();
+      ntsCache.set(cacheKey, { data, timestamp: Date.now() });
+      return data;
+    }
+  } catch {
+    // ignore
+  }
+
+  const stale = ntsCache.get(cacheKey);
+  if (stale) return stale.data;
+  return { success: false, data: [] };
 }
 
-// 1. Fetch all batches dynamically from catalog
+// 1. Fetch all batches dynamically from catalog (instant local catalog first)
 export async function fetchBatches() {
-  try {
-    const liveRes = await fetch('/api/studybee/batches.json');
-    if (liveRes.ok) {
-      const liveData = await liveRes.json();
-      return [...(liveData.new || []), ...(liveData.old || [])];
-    }
-  } catch (err) {
-    console.warn('Live proxy /api/studybee/batches.json failed:', err);
-  }
-
-  try {
-    const directRes = await fetch(`${STUDYBEE_ORIGIN}/batches.json`);
-    if (directRes.ok) {
-      const liveData = await directRes.json();
-      return [...(liveData.new || []), ...(liveData.old || [])];
-    }
-  } catch (err2) {
-    console.warn('Direct STUDYBEE_ORIGIN fetch failed:', err2);
-  }
-
   try {
     const res = await fetch('/batches.json');
     if (res.ok) {
       const data = await res.json();
       return [...(data.new || []), ...(data.old || [])];
     }
-  } catch (err3) {
-    console.error('Failed to load batches:', err3);
-    return [];
+  } catch (err) {
+    console.warn('Local /batches.json fetch notice:', err.message);
   }
+
+  try {
+    const liveRes = await fetch('/api/studybee/batches.json');
+    if (liveRes.ok) {
+      const liveData = await liveRes.json();
+      return [...(liveData.new || []), ...(liveData.old || [])];
+    }
+  } catch {
+    // ignore
+  }
+
+  return [];
 }
 
 // 2. Fetch Course Overview & Banner details
@@ -246,32 +261,25 @@ export function extractMediaInfo(item) {
 // Helper to resolve VideoCrypt streams directly
 async function resolveViaVideoCrypt(vdcId) {
   if (!vdcId || vdcId === 'null') return null;
-  const urls = [
-    `/api/vc/${vdcId}`,
-    `${STUDYBEE_ORIGIN}/vc/${vdcId}`
-  ];
-
-  for (const u of urls) {
-    try {
-      const res = await fetch(u);
-      if (res.ok) {
-        const json = await res.json();
-        const link = json.data?.data?.link || json.data?.link || json.link || {};
-        const finalUrl = link.file_url || json.file_url || '';
-        if (finalUrl) {
-          const isHls = finalUrl.toLowerCase().includes('.m3u8');
-          return {
-            success: true,
-            url: finalUrl,
-            streamUrl: finalUrl,
-            type: isHls ? 'hls' : 'mp4',
-            token: link.token || null
-          };
-        }
+  try {
+    const res = await fetch(`/api/vc/${vdcId}`);
+    if (res.ok) {
+      const json = await res.json();
+      const link = json.data?.data?.link || json.data?.link || json.link || {};
+      const finalUrl = link.file_url || json.file_url || '';
+      if (finalUrl) {
+        const isHls = finalUrl.toLowerCase().includes('.m3u8');
+        return {
+          success: true,
+          url: finalUrl,
+          streamUrl: finalUrl,
+          type: isHls ? 'hls' : 'mp4',
+          token: link.token || null
+        };
       }
-    } catch (e) {
-      console.warn(`VideoCrypt resolution via ${u} failed:`, e.message);
     }
+  } catch (e) {
+    console.warn(`VideoCrypt resolution via /api/vc/${vdcId} notice:`, e.message);
   }
   return null;
 }
@@ -279,41 +287,34 @@ async function resolveViaVideoCrypt(vdcId) {
 // Helper to resolve media/notes details directly via StudyBee/NextToppers /vc/media
 async function resolveViaVcMedia(courseId, contentId) {
   if (!courseId || !contentId) return null;
-  const urls = [
-    `/api/vc/media?course_id=${courseId}&content_id=${contentId}`,
-    `${STUDYBEE_ORIGIN}/vc/media?course_id=${courseId}&content_id=${contentId}`
-  ];
+  try {
+    const res = await fetch(`/api/vc/media?course_id=${courseId}&content_id=${contentId}`);
+    if (res.ok) {
+      const json = await res.json();
+      const contentData = json.decryptedData || json.data || {};
+      const fileUrl = contentData.file_url || '';
+      const vdcId = contentData.vdc_id;
+      const isPdf = contentData.file_type === 1 || fileUrl.toLowerCase().includes('.pdf');
+      const isHls = fileUrl.toLowerCase().includes('.m3u8');
 
-  for (const u of urls) {
-    try {
-      const res = await fetch(u);
-      if (res.ok) {
-        const json = await res.json();
-        const contentData = json.decryptedData || json.data || {};
-        const fileUrl = contentData.file_url || '';
-        const vdcId = contentData.vdc_id;
-        const isPdf = contentData.file_type === 1 || fileUrl.toLowerCase().includes('.pdf');
-        const isHls = fileUrl.toLowerCase().includes('.m3u8');
-
-        if (fileUrl) {
-          return {
-            success: true,
-            url: fileUrl,
-            streamUrl: isPdf ? `/api/stream/pdf?url=${encodeURIComponent(fileUrl)}` : fileUrl,
-            type: isPdf ? 'pdf' : (isHls ? 'hls' : 'mp4'),
-            mediaData: contentData
-          };
-        }
-
-        // If it's a DRM video with vdc_id
-        if (vdcId) {
-          const vcResult = await resolveViaVideoCrypt(vdcId);
-          if (vcResult) return vcResult;
-        }
+      if (fileUrl) {
+        return {
+          success: true,
+          url: fileUrl,
+          streamUrl: isPdf ? `/api/stream/pdf?url=${encodeURIComponent(fileUrl)}` : fileUrl,
+          type: isPdf ? 'pdf' : (isHls ? 'hls' : 'mp4'),
+          mediaData: contentData
+        };
       }
-    } catch (e) {
-      console.warn(`VC media resolution via ${u} failed:`, e.message);
+
+      // If it's a DRM video with vdc_id
+      if (vdcId) {
+        const vcResult = await resolveViaVideoCrypt(vdcId);
+        if (vcResult) return vcResult;
+      }
     }
+  } catch (e) {
+    console.warn(`VC media resolution notice:`, e.message);
   }
   return null;
 }

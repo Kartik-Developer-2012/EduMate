@@ -328,14 +328,17 @@ async function handlePwProxyRequest({ method, url, path, headers, bodyRaw, query
       body: typeof responseData === 'string' ? responseData : JSON.stringify(responseData)
     };
   } catch (err) {
-    console.error(`[pw-proxy] Upstream fetch to ${upstreamUrl} failed:`, err);
+    console.warn(`[pw-proxy] Upstream fetch to ${upstreamUrl} notice:`, err.message);
     return {
-      status: 502,
+      status: 200,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         success: false,
-        message: `Physics Wallah proxy error: ${err.message}`,
-        upstreamUrl
+        unavailable: true,
+        message: `Physics Wallah service is currently unreachable: ${err.message}`,
+        upstreamUrl,
+        batches: [],
+        data: null
       })
     };
   }

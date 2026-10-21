@@ -41,27 +41,10 @@ async function pwFetch(endpoint, options = {}) {
     }
     return await res.text();
   } catch (proxyErr) {
-    // If not a network failure but 401, bubble up immediately
     if (proxyErr.status === 401) {
       throw proxyErr;
     }
-
-    // Direct fallback to live origin if proxy fails
-    try {
-      const directUrl = `${DIRECT_PW_ORIGIN}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
-      const directRes = await fetch(directUrl, fetchOptions);
-      const data2 = await directRes.json();
-      if (!directRes.ok) {
-        const error2 = new Error(data2.message || `HTTP ${directRes.status}`);
-        error2.status = directRes.status;
-        error2.response = data2;
-        throw error2;
-      }
-      return data2;
-    } catch (directErr) {
-      console.warn(`[pwApi] Endpoint ${endpoint} failed:`, directErr.message);
-      throw directErr;
-    }
+    throw proxyErr;
   }
 }
 
@@ -142,7 +125,7 @@ export async function fetchPwBatches(page = 1, searchQuery = '') {
         message: 'Please login with your mobile number to access all live Physics Wallah batches.'
       };
     }
-    console.error('[pwApi] fetchPwBatches error:', err);
+    console.warn('[pwApi] fetchPwBatches notice:', err.message);
     return {
       success: false,
       batches: [],
@@ -154,8 +137,12 @@ export async function fetchPwBatches(page = 1, searchQuery = '') {
 // 2. Dynamically fetch Batch Details & Subjects
 export async function fetchPwBatchDetails(batchId) {
   if (!batchId) return null;
+  const strId = String(batchId).trim();
+  // Numeric IDs are Next Toppers batches, never query PW for them
+  if (/^\d+$/.test(strId)) return null;
+
   try {
-    const res = await pwFetch(`/BatchInfo?BatchId=${batchId}&Type=details`);
+    const res = await pwFetch(`/BatchInfo?BatchId=${strId}&Type=details`);
     if (res && (res.data || res.success)) {
       const data = res.data || res;
       return {

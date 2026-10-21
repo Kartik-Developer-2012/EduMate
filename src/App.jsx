@@ -137,7 +137,20 @@ function AppContent() {
       return;
     }
 
-    // 2. Query Physics Wallah API dynamically for this specific batch
+    // 2. Purely numeric ID or explicit NT provider is ALWAYS Next Toppers
+    const isNumeric = /^\d+$/.test(trimmed);
+    const isNtProvider = route.provider === 'nt';
+
+    if (isNumeric || isNtProvider) {
+      setSelectedBatch({
+        id: parseInt(trimmed, 10) || trimmed,
+        title: `Next Toppers Batch #${trimmed}`,
+        provider: 'nt'
+      });
+      return;
+    }
+
+    // 3. Query Physics Wallah API dynamically ONLY for non-numeric/PW batch IDs
     try {
       const details = await fetchPwBatchDetails(trimmed);
       if (details) {
@@ -145,27 +158,18 @@ function AppContent() {
         return;
       }
     } catch (e) {
-      console.warn('Direct PW batch fetch returned:', e.message);
+      console.warn('Direct PW batch fetch notice:', e.message);
     }
 
-    // 3. If purely numeric, create dynamic Next Toppers batch container
-    if (/^\d+$/.test(trimmed)) {
-      setSelectedBatch({
-        id: parseInt(trimmed, 10),
-        title: `Next Toppers Batch #${trimmed}`,
-        provider: 'nt'
-      });
-    } else {
-      // Direct PW batch candidate
-      setSelectedBatch({
-        id: trimmed,
-        batchId: trimmed,
-        title: `Physics Wallah Batch (${trimmed})`,
-        provider: 'pw',
-        isLivePw: true
-      });
-    }
-  }, [ntBatches, pwBatches]);
+    // Direct PW batch candidate fallback
+    setSelectedBatch({
+      id: trimmed,
+      batchId: trimmed,
+      title: `Physics Wallah Batch (${trimmed})`,
+      provider: 'pw',
+      isLivePw: true
+    });
+  }, [ntBatches, pwBatches, route.provider]);
 
   // Sync route.view with activeView
   useEffect(() => {

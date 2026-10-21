@@ -52,41 +52,50 @@ export default function FolderBrowser({
   // Sync folderHistory when route.folderId changes via browser Back/Forward
   useEffect(() => {
     const rFolderId = route.folderId || '0';
-    if (rFolderId === currentFolder.id) return;
+    setFolderHistory((prev) => {
+      const cur = prev[prev.length - 1];
+      if (String(cur?.id) === String(rFolderId)) return prev;
 
-    if (rFolderId === '0') {
-      setFolderHistory([{ id: '0', title: 'Course Content' }]);
-    } else {
-      const existingIdx = folderHistory.findIndex((f) => String(f.id) === String(rFolderId));
-      if (existingIdx !== -1) {
-        setFolderHistory((prev) => prev.slice(0, existingIdx + 1));
-      } else {
-        setFolderHistory((prev) => [...prev, { id: rFolderId, title: 'Folder Content' }]);
+      if (rFolderId === '0') {
+        return [{ id: '0', title: 'Course Content' }];
       }
-    }
-  }, [route.folderId, currentFolder.id, folderHistory]);
+      const existingIdx = prev.findIndex((f) => String(f.id) === String(rFolderId));
+      if (existingIdx !== -1) {
+        return prev.slice(0, existingIdx + 1);
+      }
+      return [...prev, { id: rFolderId, title: 'Folder Content' }];
+    });
+  }, [route.folderId]);
 
-  // Load course overview once
+  // Load course overview once per batch
   useEffect(() => {
+    let cancelled = false;
     async function loadOverview() {
       try {
         const details = await fetchCourseOverview(batch.id);
-        setCourseDetails(details);
+        if (!cancelled && details) {
+          setCourseDetails(details);
+        }
       } catch (err) {
-        console.error('Failed to load course overview:', err);
+        console.warn('Notice loading course overview:', err.message);
       }
     }
     loadOverview();
+    return () => { cancelled = true; };
   }, [batch.id]);
 
-  // Load folder content whenever folder changes
+  // Load folder content whenever batch or folder ID changes
   useEffect(() => {
+    let cancelled = false;
+    const activeFolderId = currentFolder?.id || '0';
+
     async function loadContent() {
       setLoading(true);
       setActiveTab('all');
       setSearchFilter('');
       try {
-        const items = await fetchFolderContent(batch.id, currentFolder.id);
+        const items = await fetchFolderContent(batch.id, activeFolderId);
+        if (cancelled) return;
         const resolvedItems = items || [];
         setContentItems(resolvedItems);
 
@@ -102,14 +111,19 @@ export default function FolderBrowser({
           if (matchTest) onStartTest({ ...matchTest, batchTitle: batch.title, folderHistory, course_id: batch.id });
         }
       } catch (err) {
-        console.error('Failed to load folder content:', err);
-        setContentItems([]);
+        if (!cancelled) {
+          console.warn('Notice loading folder content:', err.message);
+          setContentItems([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
     loadContent();
-  }, [batch.id, currentFolder.id]);
+    return () => { cancelled = true; };
+  }, [batch.id, currentFolder?.id]);
 
   const openFolder = (folderId, folderTitle) => {
     setActiveTab('all');

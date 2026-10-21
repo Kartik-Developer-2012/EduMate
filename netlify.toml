@@ -38,20 +38,26 @@
   force = true
 
 [[redirects]]
+  from = "/api/nts"
+  to = "https://nts.khatikgaurav38.workers.dev/"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/nts/*"
   to = "https://nts.khatikgaurav38.workers.dev/:splat"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/api/vc/*"
-  to = "https://nt.studybeepro.site/vc/:splat"
+  from = "/api/studybee/batches.json"
+  to = "/batches.json"
   status = 200
   force = true
 
 [[redirects]]
   from = "/api/studybee/*"
-  to = "https://nt.studybeepro.site/:splat"
+  to = "/batches.json"
   status = 200
   force = true
 
