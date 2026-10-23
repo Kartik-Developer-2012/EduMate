@@ -41,32 +41,58 @@ export default function BatchCard({ batch, onSelect }) {
         {/* Subtle dark overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
 
-        {/* Minimal badge - only provider, no grade tag overlay */}
-        <div className="absolute top-2 left-2">
+        {/* Minimal badge - provider & exam */}
+        <div className="absolute top-2 left-2 flex items-center gap-1.5">
           <Badge variant="primary" size="xs" className="backdrop-blur-md">
             {isPw ? 'Physics Wallah' : 'Next Toppers'}
           </Badge>
+          {batch.exam && (
+            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#1D3557]/80 text-[#A8DADC] border border-[#457B9D]/50 backdrop-blur-md">
+              {batch.exam}
+            </span>
+          )}
         </div>
 
-        {/* Free tag - subtle */}
+        {/* Free tag or price */}
         <div className="absolute top-2 right-2">
-          <Badge variant="success" size="xs" className="backdrop-blur-md">
-            FREE
-          </Badge>
+          {batch.amount === 0 || !batch.amount ? (
+            <Badge variant="success" size="xs" className="backdrop-blur-md">
+              FREE
+            </Badge>
+          ) : (
+            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#112033]/90 text-[#F1FAEE] border border-[#223E5E] backdrop-blur-md font-mono">
+              ₹{batch.amount}
+            </span>
+          )}
         </div>
       </div>
 
       {/* Content Area - Clean and minimal */}
       <div className="p-4 flex-1 flex flex-col justify-between">
         <div>
-          <h3 className="font-semibold text-sm leading-snug line-clamp-2 text-[var(--color-text-primary)] group-hover:text-[#5B21B6] transition-colors">
+          <h3 className="font-semibold text-sm leading-snug line-clamp-2 text-[var(--color-text-primary)] group-hover:text-[#A8DADC] transition-colors">
             {batch.title || batch.batchName}
           </h3>
 
-          {/* Subtle meta info */}
-          <p className="text-[11px] text-[var(--color-text-muted)] mt-1">
-            {gradeTag}
-          </p>
+          {batch.byName && (
+            <p className="text-[11px] text-[var(--color-text-secondary)] line-clamp-1 mt-1 font-medium">
+              {batch.byName}
+            </p>
+          )}
+
+          {/* Rich metadata chips */}
+          <div className="flex flex-wrap items-center gap-1.5 mt-2 text-[10px] text-[var(--color-text-muted)]">
+            {batch.class && (
+              <span className="px-1.5 py-0.5 rounded bg-[var(--color-surface-hover)] border border-[var(--color-border)]">
+                Class {batch.class}
+              </span>
+            )}
+            {batch.language && (
+              <span className="px-1.5 py-0.5 rounded bg-[var(--color-surface-hover)] border border-[var(--color-border)]">
+                {batch.language}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Progress Bar - Subtle at bottom */}

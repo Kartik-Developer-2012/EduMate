@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { fetchPwAboutMe, getStoredPwUser, pwLogout, checkPwMasterStatus, isPwMasterActive } from '../services/pwApi';
+
+import {
+  getStoredPwUser,
+  isPwMasterActive,
+  checkPwMasterStatus,
+  fetchPwAboutMe,
+  pwLogout
+} from '../services/pwApi';
 
 const CourseContext = createContext();
 

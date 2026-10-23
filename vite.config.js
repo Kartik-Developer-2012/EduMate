@@ -494,6 +494,11 @@ export default defineConfig({
       '/api/studybee': {
         target: 'https://nt.studyace.in',
         changeOrigin: true,
+      },
+      '/api/studystark': {
+        target: 'https://studystark.github.io',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/studystark/, ''),
       }
     }
   }

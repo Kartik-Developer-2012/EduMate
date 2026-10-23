@@ -82,8 +82,27 @@ export default function PwBatchBrowser({
   const cleanDescription = useMemo(() => {
     const raw = batchDetails?.description || batch?.description || batchDetails?.rawDescription || '';
     const cleaned = stripHtml(raw);
-    return cleaned || 'Access live lectures, chapter notes, daily DPPs and test series completely free with zero ads.';
-  }, [batchDetails?.description, batch?.description, batchDetails?.rawDescription]);
+    if (cleaned) return cleaned;
+    const examInfo = (batchDetails?.exam || batch?.exam) ? `targeted for ${batchDetails?.exam || batch?.exam}` : '';
+    const classInfo = (batchDetails?.class || batch?.class) ? `(Class ${batchDetails?.class || batch?.class})` : '';
+    const by = (batchDetails?.byName || batch?.byName) ? `designed ${batchDetails?.byName || batch?.byName}` : 'curated by Physics Wallah';
+    return `${batchDetails?.title || batch?.title || 'Physics Wallah Batch'} is an educational course ${examInfo} ${classInfo}, ${by}. Explore batch schedule, syllabus target, and enrollment information freely.`;
+  }, [batchDetails?.description, batch?.description, batchDetails?.rawDescription, batchDetails?.exam, batch?.exam, batchDetails?.class, batch?.class, batchDetails?.byName, batch?.byName, batchDetails?.title, batch?.title]);
+
+  // Formatted start and validity dates
+  const formattedDates = useMemo(() => {
+    const start = batchDetails?.startDate || batch?.startDate || batchDetails?.start_date || batch?.start_date;
+    const end = batchDetails?.endDate || batch?.endDate || batchDetails?.end_date || batch?.end_date;
+    let startStr = null;
+    let endStr = null;
+    try {
+      if (start) startStr = new Date(start).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch {}
+    try {
+      if (end) endStr = new Date(end).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch {}
+    return { startStr, endStr };
+  }, [batchDetails?.startDate, batch?.startDate, batchDetails?.start_date, batch?.start_date, batchDetails?.endDate, batch?.endDate, batchDetails?.end_date, batch?.end_date]);
 
   // Schedule loader declared first
   const loadBatchSchedule = useCallback(async () => {
@@ -113,7 +132,7 @@ export default function PwBatchBrowser({
       setBatchDetails(details || batch);
       const subs = details?.subjects || batch?.subjects || [];
       if (subs.length > 0) {
-        let targetSub = subs[0];
+        let targetSub = subs.find(s => !s.isResources) || subs[0];
         if (route.subjectId) {
           const matched = subs.find(s => String(s._id || s.id) === String(route.subjectId));
           if (matched) targetSub = matched;
@@ -200,6 +219,7 @@ export default function PwBatchBrowser({
 
   const handlePlayVideoItem = (video) => {
     const teacherName = video.faculty || video.teacherName || getPwTeacherName(video, activeSubject?.subject || activeSubject?.subjectName || activeSubject?.name);
+    const videoUrl = video.videoUrl || video.url || video.link || video.videoDetails?.videoUrl || video.videoDetails?.hls_url || '';
     const formattedItem = {
       ...video,
       id: video._id || video.id,
@@ -209,11 +229,14 @@ export default function PwBatchBrowser({
       provider: 'pw',
       teacherName,
       faculty: teacherName,
+      playlist: contentItems.filter(it => it.isVideoLecture !== false),
+      chapterName: selectedChapter?.name || selectedChapter?.topicName || selectedChapter?.title || 'Chapter Content',
+      subjectName: activeSubject?.subject || activeSubject?.subjectName || 'Subject',
       data: {
-        file_url: video.videoUrl || video.url || video.link || '',
-        thumbnail: video.thumbnail || video.previewImage || batch.thumbnail,
-        duration: video.duration || 0,
-        video_type: video.videoUrl?.includes('youtube') ? 1 : 2
+        file_url: videoUrl,
+        thumbnail: video.thumbnail || video.previewImage || video.videoDetails?.image || batch.thumbnail,
+        duration: video.duration || video.videoDetails?.duration || 0,
+        video_type: videoUrl?.includes('youtube') ? 1 : 2
       }
     };
     onPlayVideo(formattedItem);
@@ -383,11 +406,21 @@ export default function PwBatchBrowser({
               <span className="px-2.5 py-0.5 rounded-md bg-[#1D3557] border border-[#457B9D]/40 text-[10px] font-bold text-[#A8DADC] uppercase tracking-wider">
                 Physics Wallah
               </span>
-              <span className="px-2.5 py-0.5 rounded-md bg-[#457B9D]/20 border border-[#457B9D]/40 text-[10px] font-bold text-[#A8DADC] uppercase tracking-wider">
-                100% Free & Ad-Free
+              {(batchDetails?.exam || batch?.exam) && (
+                <span className="px-2.5 py-0.5 rounded-md bg-[#1D3557] border border-[#457B9D]/40 text-[10px] font-bold text-[#A8DADC] uppercase tracking-wider">
+                  {batchDetails?.exam || batch?.exam}
+                </span>
+              )}
+              {(batchDetails?.class || batch?.class) && (
+                <span className="px-2.5 py-0.5 rounded-md bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-[10px] font-semibold text-[var(--color-text-secondary)]">
+                  Class {batchDetails?.class || batch?.class}
+                </span>
+              )}
+              <span className="px-2.5 py-0.5 rounded-md bg-[var(--color-surface-hover)] text-[10px] font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border)]">
+                {batchDetails?.language || batch?.language || 'Hinglish'}
               </span>
-              <span className="px-2 py-0.5 rounded-md bg-[var(--color-surface-hover)] text-[10px] font-semibold text-[var(--color-text-secondary)] border border-[var(--color-border)]">
-                {batchDetails?.language || 'Hinglish'}
+              <span className="px-2.5 py-0.5 rounded-md bg-[#457B9D]/20 border border-[#457B9D]/40 text-[10px] font-bold text-[#A8DADC] uppercase tracking-wider">
+                {(batchDetails?.amount === 0 || batch?.amount === 0 || !batchDetails?.amount) ? 'Free Catalogue Batch' : `Catalogue MRP: ₹${batchDetails?.amount || batch?.amount}`}
               </span>
             </div>
 
@@ -402,12 +435,41 @@ export default function PwBatchBrowser({
             <div className="flex flex-wrap items-center gap-4 mt-4 text-xs text-[var(--color-text-secondary)]">
               <div className="flex items-center gap-1.5 text-[var(--color-text-primary)]">
                 <User className="w-3.5 h-3.5 text-[#A8DADC]" />
-                <span>{batchDetails?.byName || 'PW Faculty'}</span>
+                <span>{batchDetails?.byName || batch?.byName || 'PW Faculty'}</span>
               </div>
+              {formattedDates.startStr && (
+                <>
+                  <span>•</span>
+                  <div className="flex items-center gap-1.5 text-[var(--color-text-primary)]">
+                    <Calendar className="w-3.5 h-3.5 text-[#A8DADC]" />
+                    <span>Starts: {formattedDates.startStr}</span>
+                  </div>
+                </>
+              )}
+              {formattedDates.endStr && (
+                <>
+                  <span>•</span>
+                  <div className="flex items-center gap-1.5 text-[var(--color-text-primary)]">
+                    <CalendarCheck className="w-3.5 h-3.5 text-[#A8DADC]" />
+                    <span>Valid: {formattedDates.endStr}</span>
+                  </div>
+                </>
+              )}
               <span>•</span>
               <div className="flex items-center gap-1.5 text-[var(--color-text-primary)]">
                 <BookOpen className="w-3.5 h-3.5 text-[#A8DADC]" />
-                <span>{subjectsList.length} Subjects</span>
+                <span>{subjectsList.length} Live Subjects</span>
+              </div>
+              <div className="ml-auto">
+                <a
+                  href={`https://www.pw.live/study/batches/${batch.id || batchDetails?.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] hover:border-[#457B9D] text-[11px] font-semibold text-[#A8DADC] hover:text-[#F1FAEE] transition-all btn-press"
+                >
+                  <span>Official PW Portal</span>
+                  <ChevronRight className="w-3 h-3" />
+                </a>
               </div>
             </div>
           </div>
@@ -430,66 +492,85 @@ export default function PwBatchBrowser({
             <span className="text-xs">Loading live subjects...</span>
           </div>
         ) : subjectsList.length === 0 ? (
-          !pwUser && !masterActive ? (
-            <div className="p-5 card-surface rounded-2xl border border-[#457B9D]/40 bg-gradient-to-r from-[#1D3557]/60 via-[#457B9D]/20 to-[#1D3557]/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-2xl bg-[#457B9D]/30 border border-[#457B9D]/50 flex items-center justify-center shrink-0 mt-0.5">
-                  <ShieldCheck className="w-5 h-5 text-[#A8DADC]" />
+          <div className="p-6 card-surface rounded-3xl border border-[var(--color-border)] shadow-md">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 mb-5 pb-5 border-b border-[var(--color-border)]">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#1D3557] border border-[#457B9D]/40 flex items-center justify-center shrink-0">
+                  <BookOpen className="w-6 h-6 text-[#A8DADC]" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-[#F1FAEE] flex items-center gap-2">
-                    <span>Physics Wallah Session Required</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#457B9D]/30 text-[#A8DADC] border border-[#457B9D]/50">
-                      OTP Login
+                    <span>Batch Catalogue Overview</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#457B9D]/20 text-[#A8DADC] border border-[#457B9D]/40 font-semibold">
+                      Public Catalogue Entry
                     </span>
                   </h3>
                   <p className="text-xs text-[var(--color-text-secondary)] mt-1 max-w-2xl leading-relaxed">
-                    This live batch requires an active PW student session to load subject schedules, recorded lectures, and DPPs. Connect your PW account using a one-time OTP to unlock all content.
+                    This batch is registered in the official Physics Wallah catalogue. You can explore complete course metadata, targeted exam specifications, and academic validity below.
                   </p>
                 </div>
               </div>
-              {onOpenPwLogin && (
-                <button
-                  onClick={onOpenPwLogin}
-                  className="px-4 py-2.5 rounded-xl bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] text-xs font-bold transition-all flex items-center gap-2 shrink-0 btn-press shadow-md"
+
+              <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
+                <a
+                  href={`https://www.pw.live/study/batches/${batch.id || batchDetails?.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-[#457B9D] hover:bg-[#386684] text-[#F1FAEE] text-xs font-bold transition-all flex items-center justify-center gap-2 btn-press shadow-sm"
                 >
-                  <LogIn className="w-4 h-4" />
-                  <span>Connect PW Account</span>
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="p-5 card-surface rounded-2xl border border-[var(--color-border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[var(--color-surface-hover)] border border-[var(--color-border)] flex items-center justify-center shrink-0">
-                  <BookOpen className="w-5 h-5 text-[var(--color-text-muted)]" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-[#F1FAEE]">
-                    No Active Subjects Published Yet
-                  </h4>
-                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-                    This batch is scheduled on Physics Wallah but faculty has not published active subject schedules yet.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={loadDetails}
-                  className="px-3.5 py-2 rounded-xl bg-[var(--color-surface-hover)] hover:bg-[var(--color-surface)] border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-primary)] transition-all flex items-center gap-1.5 btn-press"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Refresh</span>
-                </button>
+                  <span>Open Official Portal</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </a>
                 <button
                   onClick={onBack}
-                  className="px-3.5 py-2 rounded-xl bg-[#1D3557] hover:bg-[#223E5E] border border-[#457B9D]/40 text-xs font-semibold text-[#A8DADC] transition-all flex items-center gap-1.5 btn-press"
+                  className="px-4 py-2.5 rounded-xl bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-primary)] transition-all flex items-center justify-center gap-1.5 btn-press"
                 >
-                  <span>Explore Other Batches</span>
+                  <span>Browse More</span>
                 </button>
               </div>
             </div>
-          )
+
+            {/* Structured Metadata Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="p-3.5 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)]">
+                <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider block">Target Exam</span>
+                <span className="text-xs font-bold text-[#F1FAEE] mt-0.5 block truncate">{batchDetails?.exam || batch?.exam || 'Comprehensive'}</span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)]">
+                <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider block">Target Class</span>
+                <span className="text-xs font-bold text-[#F1FAEE] mt-0.5 block truncate">{batchDetails?.class || batch?.class ? `Class ${batchDetails?.class || batch?.class}` : 'General'}</span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)]">
+                <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider block">Medium</span>
+                <span className="text-xs font-bold text-[#F1FAEE] mt-0.5 block truncate">{batchDetails?.language || batch?.language || 'Hinglish'}</span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)]">
+                <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider block">Start Date</span>
+                <span className="text-xs font-bold text-[#F1FAEE] mt-0.5 block truncate">{formattedDates.startStr || 'Scheduled'}</span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)]">
+                <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider block">Valid Until</span>
+                <span className="text-xs font-bold text-[#F1FAEE] mt-0.5 block truncate">{formattedDates.endStr || 'Academic Term'}</span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)]">
+                <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider block">Fee Status</span>
+                <span className="text-xs font-bold text-[#A8DADC] mt-0.5 block truncate">{(batchDetails?.amount === 0 || batch?.amount === 0 || !batchDetails?.amount) ? 'Free' : `₹${batchDetails?.amount || batch?.amount}`}</span>
+              </div>
+            </div>
+
+            {/* Legitimacy and Access Guidance Note */}
+            <div className="mt-4 p-3.5 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] flex items-start gap-3">
+              <ShieldCheck className="w-4 h-4 text-[#A8DADC] shrink-0 mt-0.5" />
+              <p className="text-[11px] text-[var(--color-text-secondary)] leading-relaxed">
+                Free Educational Index: Batch information, schedule dates, and curriculum details are provided without cost. Live lecture streams, interactive doubts, and test series remain hosted on authorized Physics Wallah platforms.
+              </p>
+            </div>
+          </div>
         ) : (
           <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none">
             {subjectsList.map((subj) => {
@@ -506,7 +587,7 @@ export default function PwBatchBrowser({
                   }`}
                 >
                   <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-[#F1FAEE]' : 'bg-[#A8DADC]'}`} />
-                  <span>{subj.subjectName || subj.name || 'Subject'}</span>
+                  <span>{subj.subject || subj.subjectName || subj.name || 'Subject'}</span>
                 </button>
               );
             })}
@@ -561,7 +642,7 @@ export default function PwBatchBrowser({
               chapters.map((ch, idx) => {
                 const chId = ch._id || ch.id;
                 const isSelected = (selectedChapter?._id || selectedChapter?.id) === chId;
-                const chapterTitle = ch.topicName || ch.title || `Chapter ${idx + 1}`;
+                const chapterTitle = ch.name || ch.topicName || ch.title || `Chapter ${idx + 1}`;
 
                 return (
                   <button
@@ -609,7 +690,7 @@ export default function PwBatchBrowser({
                   </span>
                 </div>
                 <h3 className="text-xs sm:text-sm font-bold text-[var(--color-text-primary)] truncate">
-                  {selectedChapter?.topicName || selectedChapter?.title || 'Select a Chapter'}
+                  {selectedChapter?.name || selectedChapter?.topicName || selectedChapter?.title || 'Select a Chapter'}
                 </h3>
               </div>
 
@@ -643,7 +724,7 @@ export default function PwBatchBrowser({
                   chapters.map((ch, idx) => {
                     const chId = ch._id || ch.id;
                     const isSelected = (selectedChapter?._id || selectedChapter?.id) === chId;
-                    const chapterTitle = ch.topicName || ch.title || `Chapter ${idx + 1}`;
+                    const chapterTitle = ch.name || ch.topicName || ch.title || `Chapter ${idx + 1}`;
 
                     return (
                       <button
@@ -761,7 +842,7 @@ export default function PwBatchBrowser({
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-[var(--color-border)]">
               <div>
                 <h3 className="text-sm font-bold text-[var(--color-text-primary)] flex items-center gap-2">
-                  <span>{selectedChapter?.topicName || selectedChapter?.title || 'Chapter Content'}</span>
+                  <span>{selectedChapter?.name || selectedChapter?.topicName || selectedChapter?.title || 'Chapter Content'}</span>
                 </h3>
                 <p className="text-[11px] text-[var(--color-text-secondary)] mt-0.5">
                   Showing {filteredItems.length} {activeTab}
@@ -836,7 +917,7 @@ export default function PwBatchBrowser({
                 {filteredItems.map((item, idx) => {
                   const itemId = item._id || item.id || idx;
                   const itemTitle = item.topic || item.title || item.name || `${activeTab} ${idx + 1}`;
-                  const teacher = getPwTeacherName(item, activeSubject?.subjectName);
+                  const teacher = item.faculty || item.teacherName || getPwTeacherName(item, activeSubject?.subject || activeSubject?.subjectName || activeSubject?.name);
                   const isCompleted = isLectureCompleted(itemId);
                   const bookmarked = isBookmarked(itemId);
 

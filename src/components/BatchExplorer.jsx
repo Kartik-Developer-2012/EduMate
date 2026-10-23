@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Loader2,
   Layers,
@@ -14,6 +14,7 @@ import {
 import BatchCard from './BatchCard';
 import { SkeletonLoader } from './ui';
 import { useCourse } from '../context/CourseContext';
+import { matchesCategory } from '../services/pwApi';
 
 const CATEGORIES = [
   { id: 'all', label: 'All Batches' },
@@ -27,30 +28,45 @@ const CATEGORIES = [
   { id: 'entrance', label: 'CUET & Olympiads' },
 ];
 
-export default function BatchExplorer({ 
-  ntBatches = [], 
+export default function BatchExplorer({
+  ntBatches = [],
   pwBatches = [],
   loadingNt = false,
   loadingPw = false,
   pwUnauthorized = false,
   onOpenPwLogin,
   onSelectBatch,
-  searchQuery, 
+  searchQuery,
   setSearchQuery,
   onLoadMorePw,
   hasMorePw = false,
-  onDirectBatchLookup
+  onDirectBatchLookup,
+  selectedCategory: propCategory,
+  onSelectCategory
 }) {
   const { activeProvider, setActiveProvider, pwUser, masterActive } = useCourse();
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [localCategory, setLocalCategory] = useState('all');
   const [directBatchId, setDirectBatchId] = useState('');
+
+  const currentCategory = propCategory !== undefined ? propCategory : localCategory;
+
+  const handleCategoryClick = (catId) => {
+    if (onSelectCategory) {
+      onSelectCategory(catId);
+    } else {
+      setLocalCategory(catId);
+    }
+  };
+
+  // Use dynamically loaded PW batches from catalogue
+  const effectivePwBatches = pwBatches;
 
   // Combined batches based on activeProvider
   const currentBatches = useMemo(() => {
-    if (activeProvider === 'pw') return pwBatches;
+    if (activeProvider === 'pw') return effectivePwBatches;
     if (activeProvider === 'nt') return ntBatches;
-    return [...pwBatches, ...ntBatches];
-  }, [activeProvider, pwBatches, ntBatches]);
+    return [...effectivePwBatches, ...ntBatches];
+  }, [activeProvider, effectivePwBatches, ntBatches]);
 
   const filteredBatches = useMemo(() => {
     const q = (searchQuery || '').toLowerCase().trim();
@@ -62,45 +78,24 @@ export default function BatchExplorer({
       const idLower = String(batch.id || batch.batchId || '').toLowerCase();
       const descLower = (batch.description || '').toLowerCase();
       const langLower = (batch.language || '').toLowerCase();
+      const examLower = (batch.exam || '').toLowerCase();
+      const classLower = (batch.class || '').toLowerCase();
 
       // Multi-word search matching across all batch attributes
       if (tokens.length > 0) {
-        const fullSearchable = `${titleLower} ${byNameLower} ${idLower} ${descLower} ${langLower}`;
+        const fullSearchable = `${titleLower} ${byNameLower} ${idLower} ${descLower} ${langLower} ${examLower} ${classLower}`;
         const matchesAll = tokens.every((tok) => fullSearchable.includes(tok));
         if (!matchesAll) return false;
       }
 
       // Category filter matching (only applies when no global search is active)
-      if (selectedCategory !== 'all' && !q) {
-        if (selectedCategory === 'neet' && !titleLower.includes('neet') && !titleLower.includes('yakeen')) {
-          return false;
-        }
-        if (selectedCategory === 'jee' && !titleLower.includes('jee') && !titleLower.includes('prayas')) {
-          return false;
-        }
-        if (selectedCategory === '10th' && !titleLower.includes('10th') && !titleLower.includes('class 10') && !titleLower.includes('udaan')) {
-          return false;
-        }
-        if (selectedCategory === '9th' && !titleLower.includes('9th') && !titleLower.includes('class 9') && !titleLower.includes('neev')) {
-          return false;
-        }
-        if (selectedCategory === '11th' && !titleLower.includes('11th') && !titleLower.includes('class 11') && !titleLower.includes('arjuna')) {
-          return false;
-        }
-        if (selectedCategory === '12th' && !titleLower.includes('12th') && !titleLower.includes('class 12') && !titleLower.includes('lakshya')) {
-          return false;
-        }
-        if (selectedCategory === 'foundation' && !titleLower.includes('7') && !titleLower.includes('8') && !titleLower.includes('nirmaan') && !titleLower.includes('umang')) {
-          return false;
-        }
-        if (selectedCategory === 'entrance' && !titleLower.includes('cuet') && !titleLower.includes('ioqm') && !titleLower.includes('nsejs')) {
-          return false;
-        }
+      if (currentCategory !== 'all' && !q) {
+        return matchesCategory(batch, currentCategory);
       }
 
       return true;
     });
-  }, [currentBatches, selectedCategory, searchQuery]);
+  }, [currentBatches, currentCategory, searchQuery]);
 
   const isLoading = (activeProvider === 'pw' && loadingPw) || (activeProvider === 'nt' && loadingNt) || (activeProvider === 'all' && loadingNt && loadingPw);
 
@@ -298,9 +293,9 @@ export default function BatchExplorer({
         {CATEGORIES.map((cat) => (
           <button
             key={cat.id}
-            onClick={() => setSelectedCategory(cat.id)}
+            onClick={() => handleCategoryClick(cat.id)}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all btn-press ${
-              selectedCategory === cat.id
+              currentCategory === cat.id
                 ? 'bg-[#457B9D] text-[#F1FAEE] font-bold shadow-sm'
                 : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)]'
             }`}
@@ -351,13 +346,13 @@ export default function BatchExplorer({
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filteredBatches.map((batch) => (
-              <BatchCard key={batch.id} batch={batch} onSelect={onSelectBatch} />
+            {filteredBatches.map((batch, index) => (
+              <BatchCard key={batch.id || batch.batchId || index} batch={batch} onSelect={onSelectBatch} />
             ))}
           </div>
 
           {/* Load More Button for PW Live Batches */}
-          {activeProvider === 'pw' && hasMorePw && (
+          {(activeProvider === 'pw' || activeProvider === 'all') && hasMorePw && (
             <div className="flex justify-center mt-8">
               <button
                 onClick={onLoadMorePw}

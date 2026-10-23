@@ -26,6 +26,10 @@
       "destination": "/batches.json"
     },
     {
+      "source": "/api/studystark/(.*)",
+      "destination": "https://studystark.github.io/$1"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

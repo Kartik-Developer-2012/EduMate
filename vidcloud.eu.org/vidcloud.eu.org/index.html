@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Stark</title>
+    <!-- Preconnect for faster font loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shree-radhe.css?v=3">
+
+    <script data-cfasync="false" src="tailwind.min.js"></script>
+    <script data-cfasync="false">
+        window.isMaintenanceModeActive = false;
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-purple': 'var(--primary-color)',
+                        'dark-bg': 'var(--bg-primary)',
+                        'card-bg': 'var(--card-bg)',
+                        'border-gray': 'var(--card-border)'
+                    }
+                }
+            }
+        }
+    </script>
+
+</head>
+
+<body>
+    <script type="a9270aa7cf2b7a395b1999c0-text/javascript">
+        (function() {
+            var theme = localStorage.getItem("theme-mode") || "system";
+            var body = document.body || document.documentElement;
+            var themeClasses = ["sandalwood-mode", "forest-emerald", "ocean-deep", "sakura-blossom", "dracula-midnight", "lavender-mist", "cyberpunk-neon", "dark-mode", "dark", "light"];
+            for (var i = 0; i < themeClasses.length; i++) {
+                body.classList.remove(themeClasses[i]);
+            }
+            var activeTheme = theme;
+            if (theme === "system") {
+                var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+                activeTheme = prefersDark ? "dark" : "light";
+            }
+            var darkThemes = ["dark", "ocean-deep", "dracula-midnight", "cyberpunk-neon"];
+            var isDark = darkThemes.indexOf(activeTheme) !== -1;
+            if (isDark) {
+                body.classList.add("dark");
+                body.classList.add("dark-mode");
+            } else {
+                body.classList.add("light");
+            }
+            if (activeTheme !== "light" && activeTheme !== "dark") {
+                var suffix = (activeTheme === "sandalwood") ? "-mode" : "";
+                body.classList.add(activeTheme + suffix);
+            }
+        })();
+    </script>
+    <div id="globalPreloader" style="position:fixed; top:72px; bottom:0; left:0; right:0; z-index:49; display:flex; align-items:center; justify-content:center; transition:opacity 0.4s ease, visibility 0.4s ease; background-color: var(--bg-color, #050505);">
+        <svg class="animate-spin h-10 w-10 text-[var(--primary-color)] opacity-80" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+    </div>
+    <script type="a9270aa7cf2b7a395b1999c0-text/javascript">
+        var _prel = document.getElementById("globalPreloader");
+        if (document.body.classList.contains("light")) {
+            _prel.style.backgroundColor = "#f3f4f6";
+        } else {
+            _prel.style.backgroundColor = "#050505";
+        }
+    </script>
+    <style>
+        @keyframes custom-spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+    <div class="loading-overlay" id="loadingOverlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.55); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); display:flex; align-items:center; justify-content:center; z-index:99999999; font-family:'Sora',system-ui,sans-serif; display:none;">
+        <div style="display:flex; align-items:center; justify-content:center; gap:1rem;">
+            <svg style="width:28px; height:28px; color:var(--primary-color) !important; animation:custom-spin 1s linear infinite; flex-shrink:0; opacity:0.95;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle style="opacity: 0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                <path style="opacity: 0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span style="font-size:15px; color:#ffffff !important; font-weight:700 !important; letter-spacing:-0.1px; font-family:'Sora',system-ui,sans-serif;">Loading video...</span>
+        </div>
+    </div>
+    <!-- Header - Full Width, No Sidebar -->
+    <header id="appHeader" class="app-header">
+        <div class="header-left">
+            <div class="header-logo logo" onclick="if (!window.__cfRLUnblockHandlers) return false; showAboutPopup()" style="cursor: pointer;" data-cf-modified-a9270aa7cf2b7a395b1999c0-="">
+                <img src="images/logo.png" alt="StudyStark Logo" class="header-logo-img" width="32" height="32">
+            </div>
+            <span class="header-title"></span>
+        </div>
+        <div class="header-controls">
+            <!-- Global Search Button -->
+            <button id="globalSearchBtn" class="header-btn icon-btn" title="Search Batches">
+                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor">
+                    <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+            </button>
+            <!-- Refresh Button -->
+            <button onclick="if (!window.__cfRLUnblockHandlers) return false; location.reload()" class="header-btn icon-btn" title="Refresh Page" data-cf-modified-a9270aa7cf2b7a395b1999c0-="">
+            <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor">
+                <path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z"/>
+            </svg>
+        </button>
+            <!-- History Button -->
+            <button id="historyBtn" class="header-btn icon-btn" title="Watch History">
+                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor">
+                    <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.25 2.52.77-1.28-3.52-2.09V8z"/>
+                </svg>
+            </button>
+            <!-- Favorites Button -->
+            <button id="favoritesBtn" class="header-btn icon-btn" title="My Favorites">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+            </button>
+            <!-- Theme Toggle -->
+            <button id="themeToggle" class="header-btn icon-btn" title="Toggle theme">
+            <svg id="iconMoon" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+            </svg>
+            <svg id="iconSun" class="w-5 h-5 hidden" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6.76 4.84l-1.8-1.79-1.41 1.41 
+                         1.79 1.8 1.42-1.42zm10.48 0l1.8-1.79 
+                         1.41 1.41-1.79 1.8-1.42-1.42zM12 4V1h-2v3h2zm0 
+                         19v-3h-2v3h2zm8-9h3v-2h-3v2zM1 
+                         12H4v-2H1v2zm3.34 
+                         6.66l-1.8 1.79 1.41 1.41 
+                         1.79-1.8-1.4-1.4zM18.66 
+                         18.66l1.79 1.79 1.41-1.41-1.79-1.79-1.41 
+                         1.41z"></path>
+            </svg>
+        </button>
+        </div>
+    </header>
+
+    <!-- Main Content - Full Width -->
+    <main id="mainContent">
+        <!-- Content will be loaded here -->
+    </main>
+
+    <!-- Image Popup Modal -->
+    <div id="imagePopup" class="fixed inset-0 z-50 bg-black bg-opacity-95 hidden flex items-center justify-center">
+        <div class="relative w-full h-full flex items-center justify-center">
+            <button id="closeImagePopup" class="absolute top-6 right-6 text-white hover:text-gray-300 transition-colors z-10">
+                <svg class="w-12 h-12" fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            <img id="popupImage" src="" alt="Full size image" class="max-w-full max-h-full object-contain">
+        </div>
+    </div>
+
+    <!-- Global Fuzzy Search Modal -->
+    <div id="globalSearchModal" class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <!-- Modal Card -->
+        <div class="global-search-modal-card transform scale-95 opacity-0">
+            <!-- Search Header/Input Bar -->
+            <div class="global-search-header">
+                <div class="flex-1 global-search-input-wrap">
+                    <svg class="global-search-magnifier" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" id="globalSearchInput" placeholder="Search batches..." class="global-search-input-el">
+                    <button id="globalSearchClearBtn" class="flex items-center justify-center p-1 rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-colors hidden">
+                        <svg class="global-search-clear-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <button id="globalSearchCloseBtn" class="global-search-close-btn-el">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <!-- Search Results Body -->
+            <div id="globalSearchResults" class="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">Type to search batches...</div>
+            </div>
+        </div>
+    </div>
+
+
+    <input type="hidden" id="apiTokenField" value="">
+
+    <!-- Theme Selection Modal -->
+    <div id="themeModal" class="theme-modal-overlay">
+        <div class="theme-modal-container">
+            <div class="theme-modal-header">
+                <h3 class="theme-modal-title">Select Theme</h3>
+                <button id="closeThemeModal" class="theme-modal-close" title="Close">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="theme-modal-body">
+                <div class="theme-grid">
+                    <!-- Light Mode -->
+                    <div class="theme-card" data-theme-id="light">
+                        <div class="theme-card-icon">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 7a5 5 0 100 10 5 5 0 000-10zM2 13h2a1 1 0 100-2H2a1 1 0 100 2zm18 0h2a1 1 0 100-2h-2a1 1 0 100 2zM11 2v2a1 1 0 102 0V2a1 1 0 10-2 0zm0 18v2a1 1 0 102 0v-2a1 1 0 10-2 0zM5.99 4.58a1 1 0 111.41 1.41L6.05 7.34a1 1 0 01-1.41-1.41l1.35-1.35zm12.02 12.02a1 1 0 111.41 1.41L-1.35 17.75a1 1 0 11-1.41-1.41l1.35-1.35zM7.4 16.6a1 1 0 01-1.41 0l-1.35-1.35a1 1 0 111.41-1.41l1.35 1.35a1 1 0 010 1.41zm12.02-12.02a1 1 0 010 1.41l-1.35 1.35a1 1 0 11-1.41-1.41l1.35-1.35a1 1 0 011.41 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="theme-card-info">
+                            <h4 class="theme-card-name">Light Mode</h4>
+                            <p class="theme-card-desc">Clean & bright view</p>
+                        </div>
+                        <div class="theme-card-badge">✓</div>
+                    </div>
+
+                    <!-- Dark Mode -->
+                    <div class="theme-card" data-theme-id="dark">
+                        <div class="theme-card-icon">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+                            </svg>
+                        </div>
+                        <div class="theme-card-info">
+                            <h4 class="theme-card-name">Dark Mode</h4>
+                            <p class="theme-card-desc">Sleek midnight look</p>
+                        </div>
+                        <div class="theme-card-badge">✓</div>
+                    </div>
+
+                    <!-- Sandalwood -->
+                    <div class="theme-card" data-theme-id="sandalwood">
+                        <div class="theme-card-icon">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m11.314 11.314l.707.707M12 7a5 5 0 100 10 5 5 0 000-10z" />
+                            </svg>
+                        </div>
+                        <div class="theme-card-info">
+                            <h4 class="theme-card-name">Sandalwood</h4>
+                            <p class="theme-card-desc">Warm & cozy wood tones</p>
+                        </div>
+                        <div class="theme-card-badge">✓</div>
+                    </div>
+
+                    <!-- Forest Emerald -->
+                    <div class="theme-card" data-theme-id="forest-emerald">
+                        <div class="theme-card-icon">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                        </div>
+                        <div class="theme-card-info">
+                            <h4 class="theme-card-name">Forest Emerald</h4>
+                            <p class="theme-card-desc">Deep natural greens</p>
+                        </div>
+                        <div class="theme-card-badge">✓</div>
+                    </div>
+
+                    <!-- Ocean Deep -->
+                    <div class="theme-card" data-theme-id="ocean-deep">
+                        <div class="theme-card-icon">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-9v14" />
+                            </svg>
+                        </div>
+                        <div class="theme-card-info">
+                            <h4 class="theme-card-name">Ocean Deep</h4>
+                            <p class="theme-card-desc">Abyssal deep blues</p>
+                        </div>
+                        <div class="theme-card-badge">✓</div>
+                    </div>
+
+                    <!-- Sakura Blossom -->
+                    <div class="theme-card" data-theme-id="sakura-blossom">
+                        <div class="theme-card-icon">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v8m-4-4h8" />
+                            </svg>
+                        </div>
+                        <div class="theme-card-info">
+                            <h4 class="theme-card-name">Sakura Blossom</h4>
+                            <p class="theme-card-desc">Soft pink floral hues</p>
+                        </div>
+                        <div class="theme-card-badge">✓</div>
+                    </div>
+
+                    <!-- Dracula Midnight -->
+                    <div class="theme-card" data-theme-id="dracula-midnight">
+                        <div class="theme-card-icon">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <div class="theme-card-info">
+                            <h4 class="theme-card-name">Dracula Midnight</h4>
+                            <p class="theme-card-desc">Vampiric gothic purple</p>
+                        </div>
+                        <div class="theme-card-badge">✓</div>
+                    </div>
+
+                    <!-- Lavender Mist -->
+                    <div class="theme-card" data-theme-id="lavender-mist">
+                        <div class="theme-card-icon">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                            </svg>
+                        </div>
+                        <div class="theme-card-info">
+                            <h4 class="theme-card-name">Lavender Mist</h4>
+                            <p class="theme-card-desc">Gentle pastel violet</p>
+                        </div>
+                        <div class="theme-card-badge">✓</div>
+                    </div>
+
+                    <!-- Cyberpunk Neon -->
+                    <div class="theme-card" data-theme-id="cyberpunk-neon">
+                        <div class="theme-card-icon">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <div class="theme-card-info">
+                            <h4 class="theme-card-name">Cyberpunk Neon</h4>
+                            <p class="theme-card-desc">High contrast neon synth</p>
+                        </div>
+                        <div class="theme-card-badge">✓</div>
+                    </div>
+
+                    <!-- System Default -->
+                    <div class="theme-card" data-theme-id="system">
+                        <div class="theme-card-icon">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 2a10 10 0 0 0 0 20V2z" fill="currentColor" />
+                            </svg>
+                        </div>
+                        <div class="theme-card-info">
+                            <h4 class="theme-card-name">System Default</h4>
+                            <p class="theme-card-desc">Syncs with OS settings</p>
+                        </div>
+                        <div class="theme-card-badge">✓</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Watch History Clear Confirmation Modal -->
+    <div id="confirmClearHistoryModal" class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 transition-all duration-300">
+        <div class="bg-card-bg border border-border-gray rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 opacity-0 transition-all duration-300">
+            <!-- Modal Body -->
+            <div class="p-6">
+                <!-- Icon & Title -->
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 flex-shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-[var(--text-primary)]">Clear Watch History?</h3>
+                </div>
+                <!-- Description -->
+                <p class="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">
+                    Are you sure you want to clear your entire watch history? This action cannot be undone.
+                </p>
+                <!-- Actions -->
+                <div class="flex justify-end gap-3">
+                    <button id="cancelClearHistoryBtn" class="px-4 py-2 rounded-lg border border-border-gray text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] text-sm font-semibold transition-colors">
+                        Cancel
+                    </button>
+                    <button id="confirmClearHistoryBtn" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold shadow-md shadow-red-600/10 transition-colors">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <footer class="app-footer mt-auto py-6 text-center text-[13px] font-medium text-gray-400 opacity-70">&copy; 2024-2026 Copyright StudyStark. All Rights Reserved.</footer>
+    <img alt="Hits" src="https://hits.sh/vidcloud.eu.org.svg?view=today-total&style=for-the-badge" style="display:none;" />
+    <script type="a9270aa7cf2b7a395b1999c0-text/javascript">
+        function showAboutPopup() {
+            const isLight = document.body.classList.contains("light");
+            const bg = isLight ? "#ffffff" : "#1a1a2e";
+            const txt = isLight ? "#1f2937" : "#f3f4f6";
+
+            const overlay = document.createElement("div");
+            overlay.style.cssText = `position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity 0.3s ease;`;
+            overlay.innerHTML = `
+          <div class="ws-alert-modal" style="width:100%;max-width:360px;background:${bg};border-radius:24px;padding:32px;text-align:center;transform:scale(0.9);transition:all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);border:1px solid rgba(var(--primary-color-rgb),0.2);box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+              <div style="width:64px;height:64px;margin:0 auto 16px;border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:rgba(var(--primary-color-rgb),0.1);">
+                  <img src="images/logo.png" alt="StudyStark Logo" style="width:40px;height:40px;object-fit:contain;">
+              </div>
+              <h3 style="font-size:20px;font-weight:800;color:${txt};margin-bottom:4px;font-family:'Sora',system-ui,sans-serif;">StudyStark Web</h3>
+              <div style="font-size:12px;color:rgba(156,163,175,0.85);margin-bottom:16px;font-family:'Sora',system-ui,sans-serif;">Version 2.2</div>
+              
+              <p style="font-size:14px;color:${isLight ? '#4b5563' : '#9ca3af'};line-height:1.5;margin-bottom:20px;font-family:'Sora',system-ui,sans-serif;">
+                  Simplified platform designed for effortless learning and distraction-free study sessions.
+              </p>
+              
+              <div style="font-size:13px;color:${txt};font-weight:600;margin-bottom:24px;font-family:'Sora',system-ui,sans-serif;">
+                  Developer: <span style="color:var(--primary-color);">Dev Aryan</span>
+              </div>
+              
+              <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px;font-family:'Sora',system-ui,sans-serif;">
+                  <a href="https://telegram.me/fatal_domain" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:var(--primary-color);color:white !important;text-decoration:none;border-radius:12px;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(var(--primary-color-rgb),0.3);transition:all 0.2s;">
+                      <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24" style="width:16px;height:16px;">
+                          <path d="M11.944 0C5.348 0 0 5.348 0 12c0 6.652 5.348 12 11.944 12 6.652 0 12-5.348 12-12 0-6.652-5.348-12-12-12zm5.823 8.358l-2.022 9.539c-.152.68-.557.846-1.127.525l-3.084-2.274-1.488 1.431c-.165.165-.304.304-.623.304l.222-3.153 5.736-5.18c.249-.222-.054-.346-.388-.124l-7.09 4.462-3.056-.957c-.664-.208-.679-.664.139-.983l11.939-4.6c.552-.201 1.059.146.859.983z"/>
+                      </svg>
+                      Contact Admin
+                  </a>
+                  <button id="about-close-btn" style="padding:10px;background:transparent;border:1px solid ${isLight ? '#d1d5db' : '#374151'};color:${isLight ? '#4b5563' : '#9ca3af'} !important;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;">
+                      Close
+                  </button>
+              </div>
+              
+              <div style="font-size:11px;color:${isLight ? '#6b7280' : '#9ca3af'};display:flex;align-items:center;justify-content:center;gap:4px;font-family:'Sora',system-ui,sans-serif;">
+                  Made with <span id="heart-anim" style="color:#ef4444;display:inline-block;">❤️</span>
+              </div>
+          </div>
+      `;
+
+            if (!document.getElementById("heartbeat-style")) {
+                const style = document.createElement("style");
+                style.id = "heartbeat-style";
+                style.innerHTML = `
+            @keyframes heartbeat {
+                0% { transform: scale(1); }
+                30% { transform: scale(1.3); }
+                60% { transform: scale(1.15); }
+                100% { transform: scale(1); }
+            }
+            #heart-anim {
+                animation: heartbeat 1.2s infinite ease-in-out;
+            }
+        `;
+                document.head.appendChild(style);
+            }
+
+            document.body.appendChild(overlay);
+
+            requestAnimationFrame(() => {
+                overlay.style.opacity = "1";
+                overlay.querySelector(".ws-alert-modal").style.transform = "scale(1)";
+            });
+
+            const close = () => {
+                overlay.style.opacity = "0";
+                overlay.querySelector(".ws-alert-modal").style.transform = "scale(0.9)";
+                setTimeout(() => overlay.remove(), 300);
+            };
+
+            overlay.querySelector("#about-close-btn").onclick = close;
+            overlay.onclick = (e) => {
+                if (e.target === overlay) close();
+            };
+        }
+    </script>
+    <!-- <script disable-devtool-auto src='security-mate-11.js?v1.1'></script> -->
+    <script src="shree-radhe-app.js?v=1201" type="a9270aa7cf2b7a395b1999c0-text/javascript"></script>
+    <script src="yaha-ayiye-radhe.js?v=17272" type="a9270aa7cf2b7a395b1999c0-text/javascript"></script>
+
+
+
+    <script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="a9270aa7cf2b7a395b1999c0-|49" defer></script>
+    <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"fe6008919773468a8c3259dbe83eef30","r":1,"spa":2}'
+        crossorigin="anonymous"></script>
+</body>
+
+</html>

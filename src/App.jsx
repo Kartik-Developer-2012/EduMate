@@ -33,6 +33,7 @@ function AppContent() {
   const [pwUnauthorized, setPwUnauthorized] = useState(false);
   const [pwPage, setPwPage] = useState(1);
   const [hasMorePw, setHasMorePw] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   // General App State
   const [activeView, setActiveView] = useState(route.view || 'batches'); // 'batches' | 'enrolled'
@@ -69,11 +70,11 @@ function AppContent() {
     return () => { isCancelled = true; };
   }, []);
 
-  // 2. Dynamically load Physics Wallah batches from live API
-  const loadPwBatches = useCallback(async (page = 1, query = '', append = false) => {
+  // 2. Dynamically load Physics Wallah batches from live API / catalogue
+  const loadPwBatches = useCallback(async (page = 1, query = '', append = false, category = selectedCategory) => {
     setLoadingPw(true);
     try {
-      const res = await fetchPwBatches(page, query);
+      const res = await fetchPwBatches(page, query, { category });
       if (res.unauthorized) {
         if (!masterActive) {
           setPwUnauthorized(true);
@@ -93,7 +94,7 @@ function AppContent() {
     } finally {
       setLoadingPw(false);
     }
-  }, [masterActive]);
+  }, [masterActive, selectedCategory]);
 
   // Live PW batches loading and debounced live search
   useEffect(() => {
@@ -101,21 +102,21 @@ function AppContent() {
     if (pwUnauthorized && !masterActive && !pwUser) return;
 
     const timer = setTimeout(() => {
-      loadPwBatches(1, searchQuery, false);
+      loadPwBatches(1, searchQuery, false, selectedCategory);
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, loadPwBatches, pwUser, masterActive, pwUnauthorized]);
+  }, [searchQuery, selectedCategory, loadPwBatches, pwUser, masterActive, pwUnauthorized]);
 
   // Handle immediate search (e.g. Enter pressed in search bar)
   const handleImmediateSearch = useCallback((query) => {
-    loadPwBatches(1, query, false);
-  }, [loadPwBatches]);
+    loadPwBatches(1, query, false, selectedCategory);
+  }, [loadPwBatches, selectedCategory]);
 
   // Handle Load More PW batches
   const handleLoadMorePw = () => {
     if (!loadingPw && hasMorePw) {
-      loadPwBatches(pwPage + 1, searchQuery, true);
+      loadPwBatches(pwPage + 1, searchQuery, true, selectedCategory);
     }
   };
 
@@ -362,6 +363,8 @@ function AppContent() {
             onLoadMorePw={handleLoadMorePw}
             hasMorePw={hasMorePw}
             onDirectBatchLookup={handleDirectBatchLookup}
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
           />
         )}
       </main>
@@ -372,6 +375,20 @@ function AppContent() {
           item={playingVideoItem}
           courseId={selectedBatch?.id || playingVideoItem?.course_id || route.batchId}
           onClose={handleCloseVideo}
+          onSelectLecture={(newLecture) => {
+            const nextItem = {
+              ...newLecture,
+              playlist: playingVideoItem.playlist || [],
+              chapterName: playingVideoItem.chapterName || '',
+              subjectName: playingVideoItem.subjectName || ''
+            };
+            setPlayingVideoItem(nextItem);
+            navigate({ videoId: String(newLecture.id || newLecture.entity_id || newLecture._id) }, { replace: true });
+          }}
+          onOpenPdf={(pdfDoc) => {
+            handleCloseVideo();
+            setViewingPdfItem(pdfDoc);
+          }}
         />
       )}
 

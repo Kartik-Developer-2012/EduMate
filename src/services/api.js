@@ -130,7 +130,8 @@ export function extractMediaInfo(item) {
 
   const data = item.data || item;
   const thumbnail = data.thumbnail || data.batchImage || data.previewImage || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80';
-  let fileUrl = data.file_url || data.videoUrl || data.url || data.attachmentUrl || data.fileUrl || '';
+  const isDocType = data.file_type === 1 || data.contentType === 'notes' || data.contentType === 'dppNotes' || item.type === 'pdf';
+  let fileUrl = data.file_url || data.videoUrl || data.url || (isDocType ? data.attachmentUrl : '') || data.fileUrl || '';
   const vdcId = data.vdc_id || item.vdc_id || null;
 
   // Check if it's a YouTube video

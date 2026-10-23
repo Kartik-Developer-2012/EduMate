@@ -1,0 +1,40 @@
+{
+  "name": "PWX — Physics Wallah Player",
+  "short_name": "PWX",
+  "description": "Access JEE/NEET preparation batches, video lectures, and study materials from Physics Wallah.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#09090f",
+  "theme_color": "#00ccff",
+  "orientation": "any",
+  "categories": ["education"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Browse Batches",
+      "url": "/pw",
+      "description": "Explore all available batches"
+    }
+  ]
+}

@@ -68,6 +68,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/studystark/*"
+  to = "https://studystark.github.io/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
